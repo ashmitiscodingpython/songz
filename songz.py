@@ -3,14 +3,13 @@ import requests
 import argparse
 import yt_dlp
 import json
-import subprocess
 import mutagen
 import threading
 from urllib.parse import quote
-from pydub import AudioSegment
 import keyboard
 import time
 import os
+import re
 os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
 import pygame
 import ctypes
@@ -23,6 +22,15 @@ def get_times(milliseconds: int):
 def clearline(text="", end=""):
     print(f"\r{text:80}\r{end}", end="")
 
+def suggestions(data_):
+    similar = requests.get(f"http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(data_['artist'])}&track={quote(data_['name'])}&api_key=483f6442563f932e2b116e1c83d316af&format=json&limit=5").json()['similartracks']['track']
+    print("Suggested tracks: (Press the number key to select a song)")
+    i = 0
+    for track in similar:
+        i += 1
+        print(f"{i}. {track['name']} by {track['artist']['name']} [Playcount: {track['playcount']}]")
+    return similar
+
 def camelcase(text):
     sofar = ""
     returning = ""
@@ -33,7 +41,7 @@ def camelcase(text):
             returning += sofar[0].upper() + sofar[1:].lower() + " "
             sofar = ""
     returning += sofar[0].upper() + sofar[1:].lower()
-    return returning
+    return re.sub(r'[<>:"/\\|?*]', "", returning)
 
 def load_song(name, starting: bool, top=False, details=False):
     if starting:
@@ -76,6 +84,7 @@ def load_song(name, starting: bool, top=False, details=False):
 
 def play_song(title_):
     global current_length
+    title_ = camelcase(title_)
     current_length = mutagen.File(f"SONGS/{title_}.mp3").info.length * 1000
     pygame.mixer.music.load(f"SONGS/{title_}.mp3")
     pygame.mixer.music.play()
@@ -85,12 +94,7 @@ def mainloop(infinity: bool):
     data_ = load_song(playing, False, details=True)
     similar = None
     if infinity and current_artist:
-        similar = requests.get(f"http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={data_['artist']}&track={quote(data_['name'])}&api_key=483f6442563f932e2b116e1c83d316af&format=json&limit=5").json()['similartracks']['track']
-        print("Suggested tracks: (Press the number key to select a song)")
-        i = 0
-        for track in similar:
-            i += 1
-            print(f"{i}. {track['name']} by {track['artist']['name']} [Playcount: {track['playcount']}]")
+        similar = suggestions(data_)
     nextchoose = None
     while playing is not None:
         active = user32.GetForegroundWindow() == active_window
@@ -141,8 +145,12 @@ def mainloop(infinity: bool):
                 clearline(f"Next playing: {nextchoose['name']} by {nextchoose['artist']['name']} (chosen by highest playcount)", end="\n")
                 threading.Thread(target=load_song, args=(nextchoose['name'], False, True, False)).start()
             if lefts[2] < 500 and infinity:
+                os.system("cls")
                 current_artist = nextchoose['artist']['name']
                 playing = nextchoose['name']
+                print(f"Now playing: {playing} by {current_artist}")
+                suggestions({'name': playing, 'artist': current_artist})
+                nextchoose = None
                 pygame.mixer.music.stop()
                 pygame.mixer.music.unload()
                 play_song(playing)
@@ -168,7 +176,7 @@ def download(urls, name, artist):
         "quiet": True,
         "no_warnings": True,
         "format": "bestaudio/best",
-        "outtmpl": f"SONGS/{name}.%(ext)s",
+        "outtmpl": f"SONGS/{camelcase(name)}.%(ext)s",
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
@@ -177,7 +185,7 @@ def download(urls, name, artist):
     }
     with yt_dlp.YoutubeDL(_ydl_opts) as ytdl:
         ytdl.download([urls])
-    add_song(name, artist)
+    add_song(camelcase(name), artist)
 
 def add_song(name, artist):
     try:
@@ -223,6 +231,7 @@ player = subparser.add_parser("play", help="Play a song.")
 player.add_argument("song", help="The song to play.", type=str)
 player.add_argument("-i", "--infinite", help="Autoplay similar songs.", action="store_true")
 player.add_argument("-t", "--top", help="Select the top match without displaying options", action="store_true")
+player.add_argument("-s", "--search")
 current_artist = None
 args = parser.parse_args()
 queue = []
@@ -232,10 +241,10 @@ held = False
 volume = 0.5
 current_length = 0
 if args.command == "play":
-    subprocess.run(["cls"])
+    os.system("cls")
     data = load_song(args.song, True, args.top)
     play_song(data['name'])
-    print(f"Playing '{data['name']}' by {data['artist']} now.")
+    print(f"Now playing: {data['name']} by {data['artist']}")
     playing = data['name']
     current_artist = data['artist']
     mainloop(args.infinite)
