@@ -1,0 +1,64 @@
+home:
+Search: hello_
+
+Recent:
+1. Vaazha II
+2. Vaazha
+3. Vanilla Chedi
+
+[Enter] Search    [Ctrl+Q] Exit
+[1-5] Open recent [Ctrl+N] Exit & Reset
+[B] ~Back~
+
+search:
+Search: hello
+
+[A] Artists [S] Songs [L] Albums
+[B] Back    [Q] Exit
+[N] Exit & Reset
+
+results-album:
+PAGE 1
+1. Album
+2. Album
+3. Album
+4. Album
+5. Album
+
+[A] Previous [D] Next
+[1-5] Select [Q] Exit
+[B] Back     [N] Exit & Restart
+
+results-song:
+PAGE 1
+1. Song
+2. Song
+3. Song
+4. Song
+5. Song
+
+[A] Previous [D] Next
+[1-5] Select [Q] Exit
+[B] Back     [N] Exit & Restart
+
+songstate:
+Selected song: Song by Artist
+[P] Play [B] Back [U] Add to queue
+[Q] Exit [N] Exit & Restart
+
+playing:
+0:02 ───────●────── 3:12 (-3:10)
+Playing: Song by Artist
+~Next in queue: Song by Artist~
+Recommendations:
+PAGE 1
+1. Song by Artist (Playcount: 200)
+2. Song by Artist (Playcount: 210)
+3. Song by Artist (Playcount: 220)
+4. Song by Artist (Playcount: 230)
+5. Song by Artist (Playcount: 240)
+[1-5] Add to Queue
+[Z] Previous [X] Next    [H] Home
+[E] Pause    [A] Rewind  [D] Fast-Forward
+[W] +Volume  [S] -Volume [Q] Exit
+[N] Exit & Restart       [R] ~Recommendations~

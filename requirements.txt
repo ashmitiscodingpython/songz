@@ -1,0 +1,7 @@
+requests
+yt-dlp
+mutagen
+keyboard
+colorama
+python-vlc
+pygame
