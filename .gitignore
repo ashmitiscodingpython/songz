@@ -1,6 +1,7 @@
 api
 richdemo.py
 introtester.py
+completer.py
 song.mp3
 config.json
 response.json
