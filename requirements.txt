@@ -1,7 +1,10 @@
-requests
-yt-dlp
-mutagen
-keyboard
-colorama
+requests~=2.31.0
+yt-dlp~=2026.3.17
+mutagen~=1.47.0
+keyboard~=0.13.5
+colorama~=0.4.6
 python-vlc
-pygame
+pygame~=2.6.1
+python-dotenv~=1.2.1
+argparse~=1.4.0
+rich~=13.9.4

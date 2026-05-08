@@ -2,7 +2,9 @@ api
 richdemo.py
 introtester.py
 completer.py
+secrets.env
 song.mp3
 config.json
+misc.text
 response.json
 SONGS
