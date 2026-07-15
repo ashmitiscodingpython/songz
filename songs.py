@@ -1,3 +1,4 @@
+# region Imports
 if __name__ == "__main__":
     print("Loading...")
 else:
@@ -13,7 +14,7 @@ import json
 import mutagen
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from urllib.parse import quote
+from urllib.parse import quote, parse_qs
 import keyboard
 import time
 import os
@@ -25,8 +26,16 @@ import shutil
 import vlc
 import dotenv
 import sys
-os.environ["PYGAME_HIDE_SUPPORT_PROMPT"] = "1"
-import pygame
+# endregion
+
+# region Helper Functions
+def read(fp):
+    while True:
+        try:
+            return json.load(fp)
+        except json.decoder.JSONDecodeError:
+            fp.seek(0)
+            time.sleep(0.01)
 def authenticate():
     clearline("Starting authorization process")
     dotenv.load_dotenv("secrets.env")
@@ -48,7 +57,7 @@ def authenticate():
         sessionk = session.get(
             f"https://ws.audioscrobbler.com/2.0/?method=auth.getSession&token={token}&api_key={api}&api_sig={api_sig}&format=json"
         ).json()["session"]
-        old = json.load(open("config.json"))
+        old = read(open("config.json"))
         old["username"] = sessionk["name"]
         old["session"] = sessionk["key"]
         old["authenticated"] = True
@@ -62,19 +71,17 @@ def authenticate():
     return True
 def scrobble_plays():
     f = open("config.json")
-    config = json.load(f)
+    config = read(f)
     for track in config["plays"]:
         track: str
         data = track.split("!>|<!")
         scrobble(data[0], data[1])
 def scrobble(name, artist, chosen_by_user=False):
-    dotenv.load_dotenv("secrets.env")
-    api = os.getenv("LASTFM_API")
-    secret = os.getenv("LASTFM_SECRET")
-    session = json.load(open("config.json"))['session']
+    session = read(open("config.json"))['session']
+    name, artist = correction(name, artist)
     if session:
         timestamp = int(time.time())
-        sig_string = f"api_key{api}artist{artist}chosenByUser{int(chosen_by_user)}method{'track.scrobble'}sk{session}timestamp{timestamp}track{name}{secret}"
+        sig_string = f"artist{artist}chosenByUser{int(chosen_by_user)}method{'track.scrobble'}sk{session}timestamp{timestamp}track{name}"
         sign = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
         response = requests.post(
             "https://ws.audioscrobbler.com/2.0/",
@@ -82,8 +89,6 @@ def scrobble(name, artist, chosen_by_user=False):
                 "method": "track.scrobble",
                 "artist": artist,
                 "track": name,
-                "api_key": api,
-                "api_sig": sign,
                 "sk": session,
                 "timestamp": timestamp,
                 "chosenByUser": int(chosen_by_user),
@@ -105,22 +110,28 @@ def signed_request(method: str, params=None):
     sign = hashlib.md5(sig.encode("utf-8")).hexdigest()
     url = f"https://ws.audioscrobbler.com/2.0/?method={method}&{'&'.join(f'{quote(p)}={quote(v)}' for p, v in params.items())}&format=json&api_sig={sign}"
     return session.get(url).json()
-def autochoose(nowplaying, ms=False):
+def reget(url):
+    while True:
+        try:
+            return session.get(url, timeout=3)
+        except requests.exceptions.ReadTimeout:
+            pass
+def autochoose(nowplaying, played:list, ms=False):
     """
     Choose a song for autoplay.
     :return:
     """
     dotenv.load_dotenv("secrets.env")
-    username = json.load(open("config.json"))["username"]
+    username = read(open("config.json"))["username"]
     api = os.getenv("LASTFM_API")
     start = int(time.perf_counter() * 1000)
-    toptracks = session.get(
+    toptracks = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=overall&user={username}&format=json&api_key={api}"
     ).json()["toptracks"]["track"]
-    topartists = session.get(
+    topartists = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&period=overall&user={username}&format=json&api_key={api}"
     ).json()["topartists"]["artist"]
-    lovetracks = session.get(
+    lovetracks = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user={username}&limit=100&api_key={api}&format=json"
     ).json()["lovedtracks"]["track"]
     listed = {
@@ -137,6 +148,7 @@ def autochoose(nowplaying, ms=False):
         # 4 points max for top track
         # 3 points max for highest playcount
         # 5 points for loved track
+        # 1 point for matching tag
         for num, track in enumerate(cf):
             score = ((len(cf) - playcount.index(track["name"])) / len(cf)) * 3
             if track["name"] in listed["lovetracks"]:
@@ -149,9 +161,10 @@ def autochoose(nowplaying, ms=False):
                 score += (rank / len(topartists)) * 3
             scores.append(score)
         copy = cf.copy()
-        cf = sorted(cf, key=lambda e: scores[copy.index(e)], reverse=True)
+        cf = sorted(cf, key=lambda e: scores[copy.index(e)])
         scores = sorted(scores, reverse=True)
-        return cf[0], ((int(time.perf_counter() * 1000) - start) if ms else None)
+        cf = [t for t in cf if t not in played]
+        return cf[random.randint(0, 2)], ((int(time.perf_counter() * 1000) - start) if ms else None), cf, scores
     return False
 def is_active():
     kernel32 = ctypes.windll.kernel32
@@ -166,14 +179,13 @@ def erase():
     os.system('cls')
     clear()
 def clamp(num, minimum, maximum):
-    return max(minimum, (max(num, maximum)))
+    return max(minimum, (min(num, maximum)))
 def keying(e):
     global pressed, held, events
     pressed = e.name
     held.add(e.name)
 def unkeying(e):
     global held
-    e.suppress = True
     held.discard(e.name)
 def is_pressed(name):
     global held
@@ -211,9 +223,9 @@ def add_recent(sal: str, name: str, artist: str = None):
         text = f"A:>{name}"
     elif sal == "l":
         text = f"L:>{name}<!>{artist}"
-    data = json.load(open("config.json"))
+    data = read(open("config.json"))
     data["recents"].append(text)
-    json.dump(data, open("config.json", "w"))
+    json.dump(data, open("config.json", "w"), indent=4)
 def style(text: str, foreground=None, styling=None, background=None):
     parts = []
     if foreground:
@@ -235,25 +247,26 @@ def suggestions(name, artist, limit):
 
     :returns: Name as ['name'], artist as ['artist']['name'] and playcount as ['playcount'].
     """
-    similar = session.get(f"http://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&format=json&limit={limit + 1}").json()['similartracks']['track']
+    name, artist = correction(name, artist)
+    similar = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&format=json&limit={limit + 1}").json()['similartracks']['track']
     return similar
 def results(name, mode="songs", limit=5):
     if mode == "songs":
-        _ = session.get(f"http://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
         response_ = _['results']['trackmatches']['track']
         if response_:
             return response_
         else:
             return False
     elif mode == "albums":
-        _ = session.get(f"http://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
         response_ = _['results']['albummatches']['album']
         if response_:
             return response_
         else:
             return False
     elif mode == "artists":
-        _ = session.get(f"http://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
         response_ = _['results']['artistmatches']['artist']
         if response_:
             return response_
@@ -268,21 +281,24 @@ def load_song(name, artist=None):
         url = response_['original_url']
         download(url, camelcase(name), artist)
         tru, val = check(camelcase(name), True)
+    val = val[0]
     current["name"] = val
     current["artist"] = get_saved_artist(val)
     return {"name": val, "artist": get_saved_artist(val)}
 def play_song(title_, player_):
     global current_length, current
     titl = camelcase(title_)
-    current_length = mutagen.File(f"SONGS/{titl}.mp3").info.length * 1000
+    artist = get_saved_artist(titl)
+    current_length = mutagen.File(f"SONGS/{titl}---{artist}.mp3").info.length * 1000
     current['length'] = current_length
     player_.stop()
-    player_.set_media(vlc.Media(f"SONGS/{titl}.mp3"))
+    player_.set_media(vlc.Media(f"SONGS/{titl}---{artist}.mp3"))
     player_.play()
     threading.Thread(target=scrobble, args=(title_, get_saved_artist(camelcase(titl)))).start()
-    old = json.load(open("config.json"))
+    old = read(open("config.json"))
     old["plays"].append(f"{titl}!>|<!{get_saved_artist(titl)}")
     json.dump(old, open("config.json", "w"), indent=4)
+    add_recent("s", titl, get_saved_artist(titl))
 def download(urls, name, artist):
     #    "progress_hooks": [download_progress],
     #    "progress_delta": 0.01,
@@ -291,7 +307,7 @@ def download(urls, name, artist):
         "quiet": True,
         "no_warnings": True,
         "format": "bestaudio/best",
-        "outtmpl": f"SONGS/{camelcase(name)}.%(ext)s",
+        "outtmpl": f"SONGS/{camelcase(name)}---{artist}.%(ext)s",
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
@@ -304,12 +320,13 @@ def download(urls, name, artist):
 def add_song(name, artist):
     try:
         file = open("config.json", 'r')
-        data_ = json.load(file)
+        data_ = read(file)
     except:
         open("config.json", 'x').close()
         data_ = {'songs': [], 'artists': []}
     data_["songs"].append(name)
     data_["artists"].append(artist)
+    data_["IDs"].append(f"{name}<!>{artist}")
     with open("config.json", "w") as dumpee:
         json.dump(data_, dumpee, indent=4)
 def camelcase(text):
@@ -320,16 +337,22 @@ def normalize(text):
     text = re.sub(r"\s*-\s*", " ", text)
     text = re.sub(r"[\\/:*?\"<>|]", "#", text)
     return text.strip()
+def correction(name, artist):
+    data = read(open("config.json"))
+    response = session.get(
+        f"https://ws.audioscrobbler.com/2.0/?method=track.getcorrection&artist={quote(artist)}&track={quote(name)}&api_key={os.getenv('LASTFM_API')}&format=json"
+    ).json()["corrections"]["correction"]["track"]
+    return response["name"], response["artist"]["name"]
 def check(name, verbose=False):
     try:
         file = open("config.json")
     except:
         return False
-    data_ = json.load(file)
+    data_ = read(file)
     matched = difflib.get_close_matches(name, data_['songs'], 1, 0.85)
     if matched:
         if verbose:
-            return True, matched[0]
+            return True, matched
         else:
             return True
     else:
@@ -337,13 +360,16 @@ def check(name, verbose=False):
             return False, None
         else:
             return False
-def quit_(restart=False):
+def quit_(restart=False, volume=None):
+    old = read(open("config.json"))
+    old["volume"] = volume
+    json.dump(old, open("config.json", "w"), indent=4)
     os.system("cls")
     if not restart:
         print("\033[?25h", end='')
     else:
         os.system(
-            f'start cmd /k "title Command Prompt && echo {subprocess.check_output("ver", shell=True).decode().strip()} && echo ^(c^) Microsoft Corporation. All rights reserved. && cd /d \"{sys.argv[1]}\""'
+            f'start wt cmd /k "title Command Prompt && echo {subprocess.check_output("ver", shell=True).decode().strip()} && echo ^(c^) Microsoft Corporation. All rights reserved. && cd /d \"{sys.argv[1]}\""'
         )
     exit(0)
 def get_saved_artist(song):
@@ -351,7 +377,7 @@ def get_saved_artist(song):
         file = open("config.json")
     except:
         return None
-    data_ = json.load(file)
+    data_ = read(file)
     if song in data_["songs"]:
         return data_["artists"][data_["songs"].index(song)]
     else:
@@ -363,15 +389,59 @@ def download_progress(d):
         if total:
             curpos = int(min(cur / total, 1) * 35)
             clearline(f"[{style('■' * curpos, 'LIGHTMAGENTA_EX', 'BRIGHT')}{'･' * (35 - curpos)}] {style('', styling='RESET_ALL')} {(cur / total) * 100:.1f}%")
+def get_config(key):
+    try:
+        file = open("config.json")
+    except:
+        return None
+    data_ = read(file)
+    file.close()
+    return data_[key]
+# endregion
+
+# region Classes
 class SilentLogger:
     def debug(self, msg): pass
     def warning(self, msg): pass
     def error(self, msg): pass
+class Session:
+    def get(self, url: str, secure: bool = False) -> dict:
+        """
+        Sends a POST request to the GET endpoint of the backend
+        :param url: The url that would have been sent to last.fm's API minus the api_key and/or api_sig
+        :param secure: Whether to include the api_sig or not; False by default
+        :return: The exact response from last.fm OR the error code plsu the error message
+        """
+        q = url.replace("https://ws.audioscrobbler.com/2.0/?", "")
+        queries_ = parse_qs(q)
+        queries = {}
+        for key, value in queries_.items():
+            queries[key] = value[0]
+        queries.pop("format")
+        queries["session_key"] = get_config("ssk")
+        response = requests.post(
+            "https://songz.ashmit.hackclub.app/get",
+            json=queries
+        ).json()["response"]
+        return response
+    def post(self, url: str, data: dict, secure: bool = False):
+        """
 
+        :param url:
+        :param data:
+        :param secure:
+        :return:
+        """
+
+# endregion
+
+# region Main Functions
 def UI():
     global current, events, user32, active_window, last_active, pressed, main, queued, lefts, rhide
+    # region Initialization
     intext = ""
     future = None
+    laststate = "home"
     start = time.perf_counter()
     player = vlc.MediaPlayer()
     cursor = 0
@@ -418,9 +488,10 @@ def UI():
         'num 1', 'num 2', 'num 3', 'num 4', 'num 5', 'num 6',
         'num 7', 'num 8', 'num 9', 'num 0'
     ]
+    # endregion
     while True:
         with open("config.json") as f:
-            config = json.load(f)
+            config = read(f)
         active = user32.GetForegroundWindow() == active_window
         if not active:
             pressed = None
@@ -444,6 +515,7 @@ def UI():
                     if cursor == len(intext) + 1:
                         cursor -= 1
                 if pressed == "enter":
+                    laststate = state
                     state = "search"
                     erase()
                 if pressed == "left":
@@ -453,177 +525,93 @@ def UI():
                     cursor += 1
                     cursor = clamp(cursor, 0, len(intext))
                 if pressed in ['q', 'Q'] and ctrl:
-                    quit_()
+                    quit_(volume=volume)
                 if pressed in ['n', 'N'] and ctrl:
-                    quit_(True)
+                    quit_(volume=volume, restart=True)
                 if pressed in ['b', 'B'] and ctrl and nowplaying['name']:
                     erase()
                     temphome = False
+                    laststate = state
                     state = "playing"
-                if pressed == "ctrl":
-                    ctrl = True
+                if pressed in nums and ctrl:
+                    recent = list(dict.fromkeys(config["recents"]))
+                    recent.reverse()
+                    sel = recent[int("".join(c for c in pressed if c.isdigit())) - 1]
+                    if sel[0] == "S":
+                        data = sel[3:].split("<!>")
+                        try:
+                            name, artist = data[0], data[1]
+                        except IndexError:
+                            name, artist = data[0], None
+                        threading.Thread(target=load_song, args=(name, artist)).start()
+                        erase()
+                        laststate = state
+                        state = "songstate"
+                    elif sel[0] == "L":
+                        data = sel[3:].split("<!>")
+                        try:
+                            name, artist = data[0], data[1]
+                        except IndexError:
+                            name, artist = data[0], None
+                        erase()
+                        salbum = session.get(
+                            f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(artist)}&album={quote(name)}&format=json"
+                        ).json()['album']
+                        laststate = state
+                        state = "album"
+                        add_recent("l", salbum["name"], salbum["artist"])
+                        page = 1
+                    elif sel[0] == "A":
+                        stop = session.get(
+                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sel[3:])}&format=json&limit=10"
+                        ).json()['toptracks']
+                        sartist = {
+                            "name": sel[3:],
+                            "tops": stop['track'],
+                            "total": int(stop['@attr']['total'])
+                        }
+                        add_recent("a", sartist['name'])
+                        laststate = state
+                        state = "artist"
+                        page = 1
                 pressed = None
+            ctrl = keyboard.is_pressed("ctrl")
             if esced:
                 clearline("[esc] Focus window")
             clearline("[Enter] Search           [Ctrl+Q] Exit")
             clearline("[Ctrl+(1-5)] Open recent [Ctrl+N] Exit & Relaunch")
+            if nowplaying['name']:
+                clearline("[Ctrl+B] Back")
             clearline()
-            clearline("Recents:")
             _i = 1
             try:
                 recents = list(dict.fromkeys(config["recents"]))
+                recents.reverse()
+                clearline("Recents:")
                 for recent in recents:
-                    if recent[0] == "S":
-                        metadata = recent.split("<!>")
-                        name, a = metadata[0][3:], metadata[1]
-                        clearline(f"{_i}. {name} by {a}")
-                    elif recent[0] == "A":
-                        clearline(f"{_i}. {recent[3:]} (Artist)")
-                    elif recent[0] == "L":
-                        metadata = recent.split("<!>")
-                        name, a = metadata[0][3:], metadata[1]
-                        clearline(f"{_i}. {name} by {a}")
+                    if _i < 6:
+                        if recent[0] == "S":
+                            metadata = recent.split("<!>")
+                            name, a = metadata[0][3:], metadata[1]
+                            clearline(f"{_i}. {name} by {a}")
+                        elif recent[0] == "A":
+                            clearline(f"{_i}. {recent[3:]} (Artist)")
+                        elif recent[0] == "L":
+                            metadata = recent.split("<!>")
+                            name, a = metadata[0][3:], metadata[1]
+                            clearline(f"{_i}. {name} by {a}")
+                    _i += 1
             except Exception as e:
                 if e == KeyboardInterrupt:
                     exit(1)
                 else:
                     pass
-            if nowplaying['name']:
-                clearline("[Ctrl+B] Back")
             clearline()
-        elif state == 'search':
-            clearline(f"Search: {intext}")
-            clearline("[A] Artists [S] Songs [L] Albums")
-            clearline("[B] Back    [Q] Exit  [N] Exit & Relaunch")
-            if pressed and active:
-                if pressed in ["q", "Q"]:
-                    quit_()
-                elif pressed in ["n", "N"]:
-                    quit_(True)
-                elif pressed in ['b', 'B']:
-                    erase()
-                    state = "home"
-                elif pressed in ['s', 'S']:
-                    erase()
-                    if check(camelcase(intext)):
-                        state = "songstate"
-                        erase()
-                        threading.Thread(target=load_song, args=(intext, get_saved_artist(camelcase(intext)))).start()
-                    else:
-                        state = "results-song"
-                        results_run = results(intext)
-                    page = 1
-                elif pressed in ['l', 'L']:
-                    erase()
-                    results_run = results(intext, mode="albums")
-                    state = "results-album"
-                    page = 1
-                elif pressed in ['a', 'A']:
-                    erase()
-                    intro("LIGHTGREEN_EX")
-                    clearline("Loading...")
-                    results_run = results(intext, "artists", 5)
-                    state = "results-artist"
-                    page = 1
-                pressed = None
-        elif state == 'results-song':
-            if results_run:
-                clearline(f"PAGE {page}")
-                _j = 0
-                availables = {"d": False, "a": False}
-                for track in results_run:
-                    if _j > (((page - 1) * 5) - 1) and _j < (page * 5):
-                        clearline(f"{(_j + 1) - ((page - 1) * 5)}. {track['name']} by {track['artist']}")
-                    _j += 1
-                if page > 1:
-                    availables['a'] = True
-                if len(results_run) > 5:
-                    availables['d'] = True
-                if pressed and active:
-                    if pressed in ['q', 'Q']:
-                        quit_()
-                    elif pressed in ['n', 'N']:
-                        quit_(True)
-                    elif pressed in ['d', 'D'] and availables['d']:
-                        page += 1
-                        erase()
-                        results_run = results(intext, limit=(page * 5))
-                    elif pressed in ['a', 'A'] and availables['a']:
-                        page -= 1
-                        erase()
-                    elif pressed in ['b', 'B']:
-                        erase()
-                        state = 'home'
-                        intext = ''
-                        cursor = 0
-                    elif pressed in nums:
-                        index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
-                        erase()
-                        threading.Thread(target=load_song, args=(results_run[index]['name'], results_run[index]['artist'])).start()
-                        add_recent("s", results_run[index]['name'], results_run[index]['artist'])
-                        state = "songstate"
-                    pressed = None
-                if availables['a'] or availables['d']:
-                    clearline(f"{'[A] Previous ' if availables['a'] else '             '}{'[D] Next' if availables['d'] else ''}")
-                clearline("[1-5] Select [Q] Exit")
-                clearline("[B] Back     [N] Exit & Relaunch")
-            else:
-                clearline("Autoplay is not available for this song.")
-                clearline("[P] Play [B] Back")
-                clearline("[Q] Exit [N] Exit & Relaunch")
-                if pressed and active:
-                    if pressed in ['p', 'P']:
-                        erase()
-                        threading.Thread(target=load_song, args=(intext, None)).start()
-                        state = "songstate"
-                    elif pressed in ['b', 'B']:
-                        clear()
-                        intext = ""
-                        cursor = 0
-                        state = "home"
-                    elif pressed in ['q', 'Q']:
-                        quit_()
-                    elif pressed in ['n', 'N']:
-                        quit_(True)
-                    pressed = None
-        elif state == 'songstate':
-            if current['name'] and not (nowplaying['name'] and nowplaying['name'] == current['name']):
-                if check(camelcase(current['name'])):
-                    clearline(f"Selected song: {current['name']} by {current['artist']}")
-                    clearline(f"[P] Play [B] Back {'[U] Add to queue' if nowplaying['name'] else ''}")
-                    clearline("[Q] Exit [N] Exit & Relaunch")
-                    if pressed and active:
-                        if pressed in ['p', 'P']:
-                            erase()
-                            play_song(current['name'], player)
-                            nowplaying = current.copy()
-                            state = "playing"
-                            page = 1
-                        elif pressed in ['b', 'B']:
-                            erase()
-                            state = 'results-song'
-                        elif pressed in ['u', 'U'] and nowplaying['name']:
-                            erase()
-                            queued.append({})
-                            queued[len(queued) - 1]['name'] = current['name']
-                            queued[len(queued) - 1]['artist'] = current['artist']
-                            state = "playing"
-                        elif pressed in ['q', 'Q']:
-                            quit_()
-                        elif pressed in ['n', 'N']:
-                            quit_(True)
-                        pressed = None
-                else:
-                    clearline("Loading...")
-                    clearline()
-                    clearline()
-            else:
-                clearline("Loading...")
-                clearline()
-                clearline()
-        elif state == 'playing' or temphome:
+        if state == 'playing' or temphome:
+            if state == "playing":
+                temphome = False
             try:
-                if nowplaying['length']:
+                if nowplaying['length'] and not temphome:
                     songs = get_times(nowplaying['length'])
                     curs = get_times(player.get_time())
                     lefts = get_times(songs[2] - curs[2])
@@ -631,17 +619,18 @@ def UI():
                     clearline(f"{curs[0]}:{curs[1]:02} {'─' * curpos}●{'─' * (25 - curpos)} {songs[0]}:{songs[1]:02} (-{lefts[0]}:{lefts[1]:02})")
             except:
                 clearline("Loading...")
-            clearline(f"Playing: {nowplaying['name']} {'by' if nowplaying['artist'] else ''} {nowplaying['artist'] if nowplaying['artist'] else ''}")
+            if not temphome:
+                clearline(f"Playing: {nowplaying['name']} {'by' if nowplaying['artist'] else ''} {nowplaying['artist'] if nowplaying['artist'] else ''}")
             if pressed and active and state == "playing" and not temphome:
-                if pressed in ['e', 'E']:
+                if pressed.lower() == "space":
                     if not pheld:
                         paused = not paused
                         player.pause()
                     pheld = True
                 elif pressed in ['q', 'Q']:
-                    quit_()
+                    quit_(volume=volume)
                 elif pressed in ['n', 'N']:
-                    quit_(True)
+                    quit_(volume=volume, restart=True)
                 elif pressed in ['a', 'A']:
                     if not paused:
                         player.play()
@@ -668,6 +657,7 @@ def UI():
                     erase()
                     intext = ""
                     cursor = 0
+                    laststate = state
                     state = "home"
                 elif pressed in ['o', 'O']:
                     if not autoplay:
@@ -692,7 +682,8 @@ def UI():
                 pheld = False
             try:
                 if len(queued) > 0:
-                    clearline(f"Next in queue: {queued[0]['name']} by {queued[0]['artist']}")
+                    if not temphome:
+                        clearline(f"Next in queue: {queued[0]['name']} by {queued[0]['artist']}")
                     if lefts[2] < 40000 and not ql:
                         ql = True
                         threading.Thread(target=load_song, args=(queued[0]['name'], queued[0]['artist'])).start()
@@ -739,36 +730,192 @@ def UI():
                     else:
                         if not autochose:
                             autochose = True
-                            future = executor.submit(autochoose, nowplaying)
+                            future = executor.submit(autochoose, nowplaying, played)
                         elif future.done():
                             queued = [{}] + queued
                             queued[0]['name'] = future.result()[0]['name']
                             queued[0]['artist'] = future.result()[0]['artist']['name']
-            if keyboard.is_pressed("w") and active:
+            if keyboard.is_pressed("w") and active and not temphome:
                 volume = min(100, volume + 1)
                 clearline(f"Volume: {volume}%")
                 time.sleep(0.05)
-            elif keyboard.is_pressed("s") and active:
+            elif keyboard.is_pressed("s") and active and not temphome:
                 volume = max(0, volume - 1)
                 clearline(f"Volume: {volume}%")
                 time.sleep(0.05)
-            if paused:
+            if paused and not temphome:
                 clearline(style("PAUSED", "LIGHTRED_EX", "BRIGHT"))
-            if recommendation is not False and not recommendation:
+            if recommendation is not False and not recommendation and not temphome:
                 rhide = True
                 clearline(style("This track doesn't have similar tracks.", "LIGHTMAGENTA_EX", "BRIGHT"))
-            if recommendation and not chosen and not rhide:
+            if recommendation and not chosen and not rhide and not temphome:
                 clearline(style("[1-5] Add to Queue", "LIGHTMAGENTA_EX", "BRIGHT"))
                 clearline(f"{style('[Z] Previous [X] Next    [C] Close', 'LIGHTMAGENTA_EX', 'BRIGHT')}")
             else:
                 clearline(("[H] Home     " if not chosen else '') + ("     [O] Autoplay" if not autoplay else ''))
-            clearline("[E] Pause    [A] Rewind  [D] Fast-Forward")
-            clearline("[W] +Volume  [S] -Volume [Q] Exit")
-            clearline(f"[N] Exit & Relaunch      {'[R] Recommendations' if nowplaying['artist'] and not recommendation and not rhide and not autoplay else ('[H] Home' if autoplay else '')}")
-            player.audio_set_volume(volume)
-            clearline()
-            clearline()
-            clearline()
+            if not temphome:
+                clearline("[Space] Pause [A] Rewind  [D] Fast-Forward")
+                clearline("[W] +Volume   [S] -Volume [Q] Exit")
+                clearline(f"[N] Exit & Relaunch       {'[R] Recommendations' if nowplaying['artist'] and not recommendation and not rhide and not autoplay else ('[H] Home' if autoplay else '')}")
+                player.audio_set_volume(volume)
+                clearline()
+                clearline()
+                clearline()
+        elif state == 'search':
+            clearline(f"Search: {intext}")
+            clearline("[A] Artists [S] Songs [L] Albums")
+            clearline("[B] Back    [Q] Exit  [N] Exit & Relaunch")
+            if pressed and active:
+                if pressed in ["q", "Q"]:
+                    quit_(volume=volume)
+                elif pressed in ["n", "N"]:
+                    quit_(volume=volume, restart=True)
+                elif pressed in ['b', 'B']:
+                    erase()
+                    laststate = state
+                    state = "home"
+                elif pressed in ['s', 'S']:
+                    erase()
+                    t, res = check(camelcase(intext), verbose=True)
+                    if t:
+                        if len(res) < 2:
+                            laststate = state
+                            state = "songstate"
+                            erase()
+                            threading.Thread(target=load_song, args=(intext, get_saved_artist(camelcase(intext)))).start()
+                        else:
+                            laststate = state
+                            state = "results-song"
+                            results_run = []
+                            for trac in res:
+                                results_run.append({
+                                    "name": trac,
+                                    "artist": get_saved_artist(trac)
+                                })
+                            erase()
+                            page = 1
+                    else:
+                        laststate = state
+                        state = "results-song"
+                        results_run = results(intext)
+                        erase()
+                        page = 1
+                elif pressed in ['l', 'L']:
+                    erase()
+                    results_run = results(intext, mode="albums")
+                    laststate = state
+                    state = "results-album"
+                    page = 1
+                elif pressed in ['a', 'A']:
+                    erase()
+                    intro("LIGHTGREEN_EX")
+                    clearline("Loading...")
+                    results_run = results(intext, "artists", 5)
+                    laststate = state
+                    state = "results-artist"
+                    page = 1
+                pressed = None
+        elif state == 'results-song':
+            if results_run:
+                clearline(f"PAGE {page}")
+                _j = 0
+                availables = {"d": False, "a": False}
+                for track in results_run:
+                    if _j > (((page - 1) * 5) - 1) and _j < (page * 5):
+                        clearline(f"{(_j + 1) - ((page - 1) * 5)}. {track['name']} by {track['artist']}")
+                    _j += 1
+                if page > 1:
+                    availables['a'] = True
+                if len(results_run) > 5:
+                    availables['d'] = True
+                if pressed and active:
+                    if pressed in ['q', 'Q']:
+                        quit_(volume=volume)
+                    elif pressed in ['n', 'N']:
+                        quit_(volume=volume, restart=True)
+                    elif pressed in ['d', 'D'] and availables['d']:
+                        page += 1
+                        erase()
+                        results_run = results(intext, limit=(page * 5))
+                    elif pressed in ['a', 'A'] and availables['a']:
+                        page -= 1
+                        erase()
+                    elif pressed in ['b', 'B']:
+                        erase()
+                        laststate = state
+                        state = 'home'
+                        intext = ''
+                        cursor = 0
+                    elif pressed in nums:
+                        index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
+                        erase()
+                        threading.Thread(target=load_song, args=(results_run[index]['name'], results_run[index]['artist'])).start()
+                        laststate = state
+                        state = "songstate"
+                    pressed = None
+                if availables['a'] or availables['d']:
+                    clearline(f"{'[A] Previous ' if availables['a'] else '             '}{'[D] Next' if availables['d'] else ''}")
+                clearline("[1-5] Select [Q] Exit")
+                clearline("[B] Back     [N] Exit & Relaunch")
+            else:
+                clearline("Autoplay is not available for this song.")
+                clearline("[P] Play [B] Back")
+                clearline("[Q] Exit [N] Exit & Relaunch")
+                if pressed and active:
+                    if pressed in ['p', 'P']:
+                        erase()
+                        threading.Thread(target=load_song, args=(intext, None)).start()
+                        laststate = state
+                        state = "songstate"
+                    elif pressed in ['b', 'B']:
+                        clear()
+                        intext = ""
+                        cursor = 0
+                        laststate = state
+                        state = "home"
+                    elif pressed in ['q', 'Q']:
+                        quit_(volume=volume)
+                    elif pressed in ['n', 'N']:
+                        quit_(volume=volume, restart=True)
+                    pressed = None
+        elif state == 'songstate':
+            if current['name'] and not (nowplaying['name'] and nowplaying['name'] == current['name']):
+                if check(camelcase(current['name'])):
+                    clearline(f"Selected song: {current['name']} by {current['artist']}")
+                    clearline(f"[P] Play [B] Back {'[U] Add to queue' if nowplaying['name'] else ''}")
+                    clearline("[Q] Exit [N] Exit & Relaunch")
+                    if pressed and active:
+                        if pressed in ['p', 'P']:
+                            erase()
+                            play_song(current['name'], player)
+                            nowplaying = current.copy()
+                            paused = False
+                            laststate = state
+                            state = "playing"
+                            page = 1
+                        elif pressed in ['b', 'B']:
+                            erase()
+                            state = laststate
+                        elif pressed in ['u', 'U'] and nowplaying['name']:
+                            erase()
+                            queued.append({})
+                            queued[len(queued) - 1]['name'] = current['name']
+                            queued[len(queued) - 1]['artist'] = current['artist']
+                            laststate = state
+                            state = "playing"
+                        elif pressed in ['q', 'Q']:
+                            quit_(volume=volume)
+                        elif pressed in ['n', 'N']:
+                            quit_(volume=volume, restart=True)
+                        pressed = None
+                else:
+                    clearline("Loading...")
+                    clearline()
+                    clearline()
+            else:
+                clearline("Loading...")
+                clearline()
+                clearline()
         elif state == "results-album":
             if results_run:
                 clearline(f"PAGE {page}")
@@ -792,18 +939,20 @@ def UI():
                     elif pressed in nums:
                         erase()
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
-                        salbum = session.get(f"http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json").json()['album']
+                        salbum = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json").json()['album']
+                        laststate = state
                         state = "album"
-                        add_recent("l", salbum["name"], salbum["artist"]['name'])
+                        add_recent("l", salbum["name"], salbum["artist"])
                         page = 1
                     elif pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
                         page = 1
                     elif pressed in ['q', 'Q']:
-                        quit_()
+                        quit_(volume=volume)
                     elif pressed in ['n', 'N']:
-                        quit_(True)
+                        quit_(volume=volume, restart=True)
                     pressed = None
                 clearline()
                 if availables['a'] or availables['d']:
@@ -816,10 +965,12 @@ def UI():
                 if pressed and active:
                     if pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
         elif state == "album":
             try:
                 tracks = salbum['tracks']['track']
+                clearline(f"ALBUM: {salbum['name']} by {salbum['artist']}")
                 clearline(f"PAGE {page}")
                 j = 1
                 for track in tracks:
@@ -838,11 +989,12 @@ def UI():
                         if availables['a']:
                             page -= 1
                     elif pressed in ['q', 'Q']:
-                        quit_()
+                        quit_(volume=volume)
                     elif pressed in ['n', 'N']:
-                        quit_(True)
+                        quit_(volume=volume, restart=True)
                     elif pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
                         intext = ""
                         cursor = 0
@@ -854,6 +1006,7 @@ def UI():
                         play_song(tracks[0]['name'], player)
                         nowplaying['length'] = current['length']
                         erase()
+                        laststate = state
                         state = "playing"
                         page = 1
                         for j, track in enumerate(tracks):
@@ -871,6 +1024,7 @@ def UI():
                         play_song(nowplaying['name'], player)
                         nowplaying['length'] = current['length']
                         erase()
+                        laststate = state
                         state = "playing"
                         page = 1
                         for j in range(len(tracks)):
@@ -883,6 +1037,7 @@ def UI():
                         cho = tracks[((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)]
                         threading.Thread(target=load_song, args=(cho['name'], cho['artist']['name']))
                         erase()
+                        laststate = state
                         state = "songstate"
                 clearline("[1-5] Select song    [S] Play shuffled")
                 clearline("[P] Play full album  [B] Back")
@@ -893,11 +1048,12 @@ def UI():
                 clearline("[B] Back")
                 if pressed and active:
                     if pressed in ['q', 'Q']:
-                        quit_()
+                        quit_(volume=volume)
                     elif pressed in ['n', 'N']:
-                        quit_(True)
+                        quit_(volume=volume, restart=True)
                     elif pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
         elif state == "results-artist":
             if results_run:
@@ -922,17 +1078,18 @@ def UI():
                                 results_run = results(intext, "artists", page * 5)
                     elif pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
                         page = 1
                     elif pressed in ['q', 'Q']:
-                        quit_()
+                        quit_(volume=volume)
                     elif pressed in ['n', 'N']:
-                        quit_(True)
+                        quit_(volume=volume, restart=True)
                     elif pressed in nums:
                         erase()
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
                         stop = session.get(
-                            f"http://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(results_run[index]['name'])}&format=json&limit=10"
+                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(results_run[index]['name'])}&format=json&limit=10"
                         ).json()['toptracks']
                         sartist = {
                             "name": results_run[index]['name'],
@@ -940,6 +1097,7 @@ def UI():
                             "total": int(stop['@attr']['total'])
                         }
                         add_recent("a", sartist['name'])
+                        laststate = state
                         state = "artist"
                         page = 1
                     pressed = None
@@ -954,6 +1112,7 @@ def UI():
                 if pressed and active:
                     if pressed in ['b', 'B']:
                         erase()
+                        laststate = state
                         state = "home"
         elif state == "artist":
             clearline(f"Top tracks of {sartist['name']}:")
@@ -969,14 +1128,14 @@ def UI():
                 _i += 1
             if pressed and active:
                 if pressed in ['n', 'N']:
-                    quit_(True)
+                    quit_(volume=volume, restart=True)
                 elif pressed in ['q', 'Q']:
-                    quit_()
+                    quit_(volume=volume)
                 elif pressed in ['d', 'D']:
                     if availables['d']:
                         if not len(sartist['tops']) > (page * 10) + 1:
                             stop = session.get(
-                                f"http://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit={(page + 1) * 10}"
+                                f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit={(page + 1) * 10}"
                             ).json()['toptracks']
                             sartist = {
                                 "name": sartist['name'],
@@ -989,13 +1148,15 @@ def UI():
                         page -= 1
                 elif pressed in ['b', 'B']:
                     erase()
+                    laststate = state
                     state = "home"
-                elif pressed in ['p', 'P']:
+                elif pressed in ['p', 'P', 's', 'S']:
                     clearline("Loading...")
                     stop = session.get(
-                        f"http://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit=35"
+                        f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit=35"
                     ).json()['toptracks']['track']
-                    random.shuffle(stop)
+                    if pressed in ['s', 'S']:
+                        random.shuffle(stop)
                     plad = False
                     for track in stop:
                         if not plad:
@@ -1008,18 +1169,21 @@ def UI():
                     erase()
                     play_song(stop[0]['name'], player)
                     nowplaying = current.copy()
+                    laststate = state
                     state = "playing"
                 elif pressed in exnums:
                     clearline("Loading...")
                     index = ((page - 1) * 5) + int("".join(c for c in pressed if c.isdigit()))
                     load_song(sartist['tops'][index]['name'], sartist['tops'][index]['artist']['name'])
                     erase()
+                    laststate = state
                     state = "songstate"
                 pressed = None
             if availables['d'] or availables['a']:
                 clearline(f"{'[A] Previous ' if availables['a'] else ''}{'[D] Next' if availables ['d'] else ''}")
             clearline("[Q] Exit    [N] Exit & Relaunch")
-            clearline("[B] Back    [P] Play (Shuffled)")
+            clearline("[B] Back    [P] Play (In order of playcount)")
+            clearline("[S] Play (Shuffled)")
 
 def setup():
     global events, user32, active_window, ydl, last_active, pressed, held
@@ -1027,7 +1191,6 @@ def setup():
     held = set()
     events = []
     print("\033[?25l", end="")
-    pygame.mixer.init()
     ydl_opts = {
         "logger": SilentLogger(),
         "quiet": True,
@@ -1043,10 +1206,14 @@ def setup():
     keyboard.on_press(keying)
     keyboard.on_release(unkeying)
     UI()
+# endregion
 
+# region Start
+dotenv.load_dotenv("secrets.env")
 if __name__ == "__main__":
     init()
-    session = requests.Session()
+    session = Session()
     queued: list[dict] = []
     setup()
     held = set()
+# endregion
