@@ -329,6 +329,12 @@ def add_song(name, artist):
     data_["IDs"].append(f"{name}<!>{artist}")
     with open("config.json", "w") as dumpee:
         json.dump(data_, dumpee, indent=4)
+def save_config(key, value):
+    file = open("config.json", "r")
+    data_ = read(file)
+    data_[key] = value
+    with open("config.json", "w") as dumpee:
+        json.dump(data_, dumpee, indent=4)
 def camelcase(text):
     return normalize(" ".join(w.capitalize() for w in text.split()))
 def normalize(text):
@@ -419,6 +425,7 @@ class Session:
             queries[key] = value[0]
         queries.pop("format")
         queries["session_key"] = get_config("ssk")
+        queries["secure"] = secure
         response = requests.post(
             "https://songz.ashmit.hackclub.app/get",
             json=queries
@@ -426,12 +433,17 @@ class Session:
         return response
     def post(self, url: str, data: dict, secure: bool = False):
         """
-
-        :param url:
-        :param data:
-        :param secure:
+        Sends a POST request to the POST endpoint of the backend
+        :param url: The url that would have been sent to last.fm's API minus the api_key and/or api_sig
+        :param data: The POST data sent along with the POST request to last.fm
+        :param secure: Whether to include the api_sig or not; False by default
         :return:
         """
+        q = url.replace("https://ws.audioscrobbler.com/2.0/?", "")
+        queries_ = parse_qs(q)
+        queries = {}
+        for key, value in queries_.items():
+            queries[key] = value[0]
 
 # endregion
 
@@ -1213,6 +1225,32 @@ dotenv.load_dotenv("secrets.env")
 if __name__ == "__main__":
     init()
     session = Session()
+    st = requests.post(
+        "https://songz.ashmit.hackclub.app/admin/stats",
+        json={"token": get_config("ssk")}
+    ).json()["Status"]
+    if st == "Expired" or st == "Nonexistent":
+        print("Please log in")
+        for i in range(3):
+            print("Username: ", end="")
+            us = input()
+            print("Password: ", end="")
+            pw = input()
+            ssk = requests.post(
+                "https://songz.ashmit.hackclub.app/login",
+                json={"username": us, "password": pw}
+            )
+            if ssk.status_code == 401:
+                if i != 3:
+                    print("Password and/or username incorrect. Please try again.")
+                else:
+                    print("Too many incorrect attempts. Exiting...")
+                    os.system(f'cd /d "{sys.argv[1]}"')
+                    exit(0)
+            else:
+                ssk = ssk.json()
+                save_config("ssk", ssk["session_key"])
+                break
     queued: list[dict] = []
     setup()
     held = set()
