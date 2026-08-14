@@ -25,6 +25,7 @@ import ctypes
 import shutil
 import vlc
 import dotenv
+import logging
 import sys
 # endregion
 
@@ -77,19 +78,16 @@ def scrobble_plays():
         data = track.split("!>|<!")
         scrobble(data[0], data[1])
 def scrobble(name, artist, chosen_by_user=False):
-    session = read(open("config.json"))['session']
+    sesh = get_config("session")
     name, artist = correction(name, artist)
-    if session:
+    if sesh:
         timestamp = int(time.time())
-        sig_string = f"artist{artist}chosenByUser{int(chosen_by_user)}method{'track.scrobble'}sk{session}timestamp{timestamp}track{name}"
-        sign = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
-        response = requests.post(
+        response = session.post(
             "https://ws.audioscrobbler.com/2.0/",
             data={
                 "method": "track.scrobble",
                 "artist": artist,
                 "track": name,
-                "sk": session,
                 "timestamp": timestamp,
                 "chosenByUser": int(chosen_by_user),
                 "format": "json"
@@ -403,6 +401,11 @@ def get_config(key):
     data_ = read(file)
     file.close()
     return data_[key]
+def eror(type, val, info):
+    logging.error(
+        "Uncaught exception",
+        exc_info=(exc_type, exc_value, exc_traceback)
+    )
 # endregion
 
 # region Classes
@@ -434,16 +437,19 @@ class Session:
     def post(self, url: str, data: dict, secure: bool = False):
         """
         Sends a POST request to the POST endpoint of the backend
-        :param url: The url that would have been sent to last.fm's API minus the api_key and/or api_sig
+        :param url: This parameter is unused and is only required for a clean swap from requests to Songz API
         :param data: The POST data sent along with the POST request to last.fm
         :param secure: Whether to include the api_sig or not; False by default
         :return:
         """
-        q = url.replace("https://ws.audioscrobbler.com/2.0/?", "")
-        queries_ = parse_qs(q)
-        queries = {}
-        for key, value in queries_.items():
-            queries[key] = value[0]
+        if secure:
+            data["sk"] = get_config("session")
+            sigs = dict(sorted(data.items()))
+            sig_string = "".join([k for pair in data.items() for k in pair])
+            sign = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
+            data["api_sig"] = sign
+        respons = requests.post("https://songz.ashmit.hackclub.app/post", data=data).json()["data"]
+        return respons
 
 # endregion
 
@@ -1223,6 +1229,12 @@ def setup():
 # region Start
 dotenv.load_dotenv("secrets.env")
 if __name__ == "__main__":
+    logging.basicConfig(
+        filename="errors.log",
+        level=logging.ERROR,
+        format="%(asctime)s - %(levelname)s - %(message)s"
+    )
+    sys.excepthook = eror
     init()
     session = Session()
     st = requests.post(
