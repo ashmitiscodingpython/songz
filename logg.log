@@ -1,0 +1,216 @@
+2026-08-15 17:05:18,855 INFO root: loading song blue by yung kai
+2026-08-15 17:05:18,857 INFO root: downloading blue by yung kai
+2026-08-15 17:05:18,967 INFO root: YTDL: [youtube:search] Extracting URL: ytsearch:blue yung kai topic lyrics
+2026-08-15 17:05:18,967 INFO root: YTDL: [download] Downloading playlist: blue yung kai topic lyrics
+2026-08-15 17:05:18,968 INFO root: YTDL: [youtube:search] query "blue yung kai topic lyrics": Downloading web client config
+2026-08-15 17:05:20,008 INFO root: YTDL: [youtube:search] query "blue yung kai topic lyrics" page 1: Downloading API JSON
+2026-08-15 17:05:20,574 INFO root: YTDL: [youtube:search] Playlist blue yung kai topic lyrics: Downloading 1 items of 1
+2026-08-15 17:05:20,574 INFO root: YTDL: [download] Downloading item 1 of 1
+2026-08-15 17:05:20,577 INFO root: YTDL: [youtube] Extracting URL: https://www.youtube.com/watch?v=4adZ7AguVcw
+2026-08-15 17:05:20,578 INFO root: YTDL: [youtube] 4adZ7AguVcw: Downloading webpage
+2026-08-15 17:05:21,710 INFO root: YTDL: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 17:05:21,720 INFO root: YTDL: [youtube] 4adZ7AguVcw: Downloading android vr player API JSON
+2026-08-15 17:05:22,167 INFO root: YTDL: [download] Finished downloading playlist: blue yung kai topic lyrics
+2026-08-15 17:05:22,167 INFO root: URL acquired
+2026-08-15 17:05:22,215 INFO root: starting download
+2026-08-15 17:05:22,216 INFO root: YTDL: [youtube] Extracting URL: https://www.youtube.com/watch?v=4adZ7AguVcw
+2026-08-15 17:05:22,217 INFO root: YTDL: [youtube] 4adZ7AguVcw: Downloading webpage
+2026-08-15 17:05:23,934 INFO root: YTDL: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 17:05:23,943 INFO root: YTDL: [youtube] 4adZ7AguVcw: Downloading android vr player API JSON
+2026-08-15 17:05:24,397 INFO root: YTDL: [info] 4adZ7AguVcw: Downloading 1 format(s): 251
+2026-08-15 17:05:24,793 INFO root: YTDL: [download] Destination: SONGS\Blue---yung kai.webm
+2026-08-15 17:05:24,795 INFO root: YTDL: [download] [0;94m  0.0%[0m of    3.55MiB at [0;32m 333.76KiB/s[0m ETA [0;33m00:10[0m
+2026-08-15 17:05:24,796 INFO root: YTDL: [download] [0;94m  0.1%[0m of    3.55MiB at [0;32m 499.92KiB/s[0m ETA [0;33m00:07[0m
+2026-08-15 17:05:24,798 INFO root: YTDL: [download] [0;94m  0.2%[0m of    3.55MiB at [0;32m 999.66KiB/s[0m ETA [0;33m00:03[0m
+2026-08-15 17:05:24,799 INFO root: YTDL: [download] [0;94m  0.4%[0m of    3.55MiB at [0;32m   1.62MiB/s[0m ETA [0;33m00:02[0m
+2026-08-15 17:05:24,801 INFO root: YTDL: [download] [0;94m  0.9%[0m of    3.55MiB at [0;32m   2.63MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 17:05:24,803 INFO root: YTDL: [download] [0;94m  1.7%[0m of    3.55MiB at [0;32m   4.53MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 17:05:25,007 INFO root: YTDL: [download] [0;94m  3.5%[0m of    3.55MiB at [0;32m 584.29KiB/s[0m ETA [0;33m00:06[0m
+2026-08-15 17:05:25,241 INFO root: YTDL: [download] [0;94m  7.0%[0m of    3.55MiB at [0;32m 565.59KiB/s[0m ETA [0;33m00:05[0m
+2026-08-15 17:05:25,797 INFO root: YTDL: [download] [0;94m 14.0%[0m of    3.55MiB at [0;32m 507.52KiB/s[0m ETA [0;33m00:06[0m
+2026-08-15 17:05:27,094 INFO root: YTDL: [download] [0;94m 26.7%[0m of    3.55MiB at [0;32m 421.88KiB/s[0m ETA [0;33m00:06[0m
+2026-08-15 17:05:28,127 INFO root: YTDL: [download] [0;94m 36.5%[0m of    3.55MiB at [0;32m 397.58KiB/s[0m ETA [0;33m00:05[0m
+2026-08-15 17:05:29,606 INFO root: YTDL: [download] [0;94m 45.9%[0m of    3.55MiB at [0;32m 346.88KiB/s[0m ETA [0;33m00:05[0m
+2026-08-15 17:05:30,186 INFO root: YTDL: [download] [0;94m 52.3%[0m of    3.55MiB at [0;32m 352.61KiB/s[0m ETA [0;33m00:04[0m
+2026-08-15 17:05:30,623 INFO root: YTDL: [download] [0;94m 63.3%[0m of    3.55MiB at [0;32m 394.86KiB/s[0m ETA [0;33m00:03[0m
+2026-08-15 17:05:30,724 INFO root: YTDL: [download] [0;94m 85.3%[0m of    3.55MiB at [0;32m 523.00KiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 17:05:30,816 INFO root: YTDL: [download] [0;94m100.0%[0m of    3.55MiB at [0;32m 603.85KiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 17:05:30,829 INFO root: YTDL: [download] 100% of    3.55MiB in [1;37m00:00:06[0m at [0;32m568.95KiB/s[0m
+2026-08-15 17:05:31,224 INFO root: YTDL: [ExtractAudio] Destination: SONGS\Blue---yung kai.mp3
+2026-08-15 17:05:37,435 INFO root: YTDL: Deleting original file SONGS\Blue---yung kai.webm (pass -k to keep)
+2026-08-15 17:05:37,503 INFO root: download over
+2026-08-15 17:20:36,582 INFO root: loading song Blue by yung kai
+2026-08-15 18:32:48,594 INFO root: APPLICATION EXIT
+2026-08-15 18:33:01,615 INFO root: loading song Blue by yung kai
+2026-08-15 18:37:51,897 INFO root: loading song blue by yung kai
+2026-08-15 18:40:41,638 INFO root: loading song Blue by yung kai
+2026-08-15 18:40:50,047 INFO root: POST request sent to track.scrobble code: 400
+2026-08-15 18:40:50,054 INFO root: POST request sent to track.scrobble code: 400
+2026-08-15 18:42:29,179 INFO root: loading song Blue by yung kai
+2026-08-15 18:42:37,179 INFO root: POST request sent to track.scrobble code: 500
+2026-08-15 18:42:37,308 INFO root: POST request sent to track.scrobble code: 500
+2026-08-15 18:45:08,759 INFO root: loading song Blue by yung kai
+2026-08-15 18:45:13,541 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 18:45:13,541 INFO root: POST request sent to track.scrobble code: 500
+2026-08-15 18:45:13,670 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 18:45:13,670 INFO root: POST request sent to track.scrobble code: 500
+2026-08-15 19:05:16,898 INFO root: APPLICATION EXIT
+2026-08-15 19:05:28,831 INFO root: loading song Blue by yung kai
+2026-08-15 19:05:33,791 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 19:05:33,844 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 20:32:06,530 INFO root: APPLICATION EXIT
+2026-08-15 20:32:15,880 INFO root: loading song Blue by yung kai
+2026-08-15 20:32:21,673 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 20:32:21,690 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 20:42:46,152 INFO root: APPLICATION EXIT
+2026-08-15 20:42:57,553 INFO root: loading song blue by yung kai
+2026-08-15 20:43:39,966 INFO root: loading song blue by yung kai
+2026-08-15 22:18:27,123 INFO root: loading song blue by yung kai
+2026-08-15 22:18:31,297 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 22:18:31,297 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 22:23:01,617 INFO root: loading song HUSN by Anuv Jain
+2026-08-15 22:23:01,617 INFO root: downloading HUSN by Anuv Jain
+2026-08-15 22:23:02,121 INFO root: YTDL [debug]: [youtube:search] Extracting URL: ytsearch:HUSN Anuv Jain topic lyrics
+2026-08-15 22:23:02,122 INFO root: YTDL [debug]: [download] Downloading playlist: HUSN Anuv Jain topic lyrics
+2026-08-15 22:23:02,122 INFO root: YTDL [debug]: [youtube:search] query "HUSN Anuv Jain topic lyrics": Downloading web client config
+2026-08-15 22:23:03,162 INFO root: YTDL [debug]: [youtube:search] query "HUSN Anuv Jain topic lyrics" page 1: Downloading API JSON
+2026-08-15 22:23:03,648 INFO root: YTDL [debug]: [youtube:search] Playlist HUSN Anuv Jain topic lyrics: Downloading 1 items of 1
+2026-08-15 22:23:03,648 INFO root: YTDL [debug]: [download] Downloading item 1 of 1
+2026-08-15 22:23:03,650 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=0IIJxkDtkHY
+2026-08-15 22:23:03,650 INFO root: YTDL [debug]: [youtube] 0IIJxkDtkHY: Downloading webpage
+2026-08-15 22:23:04,768 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 22:23:04,773 INFO root: YTDL [debug]: [youtube] 0IIJxkDtkHY: Downloading android vr player API JSON
+2026-08-15 22:23:05,115 INFO root: YTDL [debug]: [download] Finished downloading playlist: HUSN Anuv Jain topic lyrics
+2026-08-15 22:23:05,115 INFO root: URL acquired
+2026-08-15 22:23:05,160 INFO root: starting download
+2026-08-15 22:23:05,162 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=0IIJxkDtkHY
+2026-08-15 22:23:05,164 INFO root: YTDL [debug]: [youtube] 0IIJxkDtkHY: Downloading webpage
+2026-08-15 22:23:06,868 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 22:23:06,873 INFO root: YTDL [debug]: [youtube] 0IIJxkDtkHY: Downloading android vr player API JSON
+2026-08-15 22:23:07,222 INFO root: YTDL [debug]: [info] 0IIJxkDtkHY: Downloading 1 format(s): 251
+2026-08-15 22:23:07,258 INFO root: YTDL [debug]: [download] Destination: SONGS\Husn---Anuv Jain.webm
+2026-08-15 22:23:07,261 INFO root: YTDL [debug]: [download] [0;94m  0.0%[0m of    3.66MiB at [0;32m 327.71KiB/s[0m ETA [0;33m00:11[0m
+2026-08-15 22:23:07,263 INFO root: YTDL [debug]: [download] [0;94m  0.1%[0m of    3.66MiB at [0;32m 670.70KiB/s[0m ETA [0;33m00:05[0m
+2026-08-15 22:23:07,263 INFO root: YTDL [debug]: [download] [0;94m  0.2%[0m of    3.66MiB at [0;32m   1.53MiB/s[0m ETA [0;33m00:02[0m
+2026-08-15 22:23:07,263 INFO root: YTDL [debug]: [download] [0;94m  0.4%[0m of    3.66MiB at [0;32m   3.27MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 22:23:07,263 INFO root: YTDL [debug]: [download] [0;94m  0.8%[0m of    3.66MiB at [0;32m   6.77MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,268 INFO root: YTDL [debug]: [download] [0;94m  1.7%[0m of    3.66MiB at [0;32m   6.34MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,268 INFO root: YTDL [debug]: [download] [0;94m  3.4%[0m of    3.66MiB at [0;32m  12.78MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,277 INFO root: YTDL [debug]: [download] [0;94m  6.8%[0m of    3.66MiB at [0;32m  13.28MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,291 INFO root: YTDL [debug]: [download] [0;94m 13.6%[0m of    3.66MiB at [0;32m  15.42MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,320 INFO root: YTDL [debug]: [download] [0;94m 27.3%[0m of    3.66MiB at [0;32m  16.18MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,413 INFO root: YTDL [debug]: [download] [0;94m 54.6%[0m of    3.66MiB at [0;32m  12.95MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,497 INFO root: YTDL [debug]: [download] [0;94m100.0%[0m of    3.66MiB at [0;32m  15.33MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:23:07,510 INFO root: YTDL [debug]: [download] 100% of    3.66MiB in [1;37m00:00:00[0m at [0;32m13.59MiB/s[0m
+2026-08-15 22:23:07,808 INFO root: YTDL [debug]: [ExtractAudio] Destination: SONGS\Husn---Anuv Jain.mp3
+2026-08-15 22:23:13,386 INFO root: YTDL [debug]: Deleting original file SONGS\Husn---Anuv Jain.webm (pass -k to keep)
+2026-08-15 22:23:13,436 INFO root: download over
+2026-08-15 22:23:17,280 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 22:23:17,289 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 22:26:13,077 INFO root: loading song Jo Tum Mere Ho by Anuv Jain
+2026-08-15 22:26:13,078 INFO root: downloading Jo Tum Mere Ho by Anuv Jain
+2026-08-15 22:26:13,079 INFO root: YTDL [debug]: [youtube:search] Extracting URL: ytsearch:Jo Tum Mere Ho Anuv Jain topic lyrics
+2026-08-15 22:26:13,079 INFO root: YTDL [debug]: [download] Downloading playlist: Jo Tum Mere Ho Anuv Jain topic lyrics
+2026-08-15 22:26:13,079 INFO root: YTDL [debug]: [youtube:search] query "Jo Tum Mere Ho Anuv Jain topic lyrics": Downloading web client config
+2026-08-15 22:26:13,366 INFO root: YTDL [debug]: [youtube:search] query "Jo Tum Mere Ho Anuv Jain topic lyrics" page 1: Downloading API JSON
+2026-08-15 22:26:13,875 INFO root: YTDL [debug]: [youtube:search] Playlist Jo Tum Mere Ho Anuv Jain topic lyrics: Downloading 1 items of 1
+2026-08-15 22:26:13,875 INFO root: YTDL [debug]: [download] Downloading item 1 of 1
+2026-08-15 22:26:13,875 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=wmUJwQNGK3k
+2026-08-15 22:26:13,875 INFO root: YTDL [debug]: [youtube] wmUJwQNGK3k: Downloading webpage
+2026-08-15 22:26:14,940 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 22:26:14,945 INFO root: YTDL [debug]: [youtube] wmUJwQNGK3k: Downloading android vr player API JSON
+2026-08-15 22:26:15,342 INFO root: YTDL [debug]: [download] Finished downloading playlist: Jo Tum Mere Ho Anuv Jain topic lyrics
+2026-08-15 22:26:15,342 INFO root: URL acquired
+2026-08-15 22:26:15,412 INFO root: starting download
+2026-08-15 22:26:15,414 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=wmUJwQNGK3k
+2026-08-15 22:26:15,414 INFO root: YTDL [debug]: [youtube] wmUJwQNGK3k: Downloading webpage
+2026-08-15 22:26:17,228 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 22:26:17,232 INFO root: YTDL [debug]: [youtube] wmUJwQNGK3k: Downloading android vr player API JSON
+2026-08-15 22:26:17,574 INFO root: YTDL [debug]: [info] wmUJwQNGK3k: Downloading 1 format(s): 251
+2026-08-15 22:26:17,620 INFO root: YTDL [debug]: [download] Destination: SONGS\Jo Tum Mere Ho---Anuv Jain.webm
+2026-08-15 22:26:17,620 INFO root: YTDL [debug]: [download] [0;94m  0.0%[0m of    4.07MiB at [0;32m 344.98KiB/s[0m ETA [0;33m00:12[0m
+2026-08-15 22:26:17,621 INFO root: YTDL [debug]: [download] [0;94m  0.1%[0m of    4.07MiB at [0;32m 769.69KiB/s[0m ETA [0;33m00:05[0m
+2026-08-15 22:26:17,622 INFO root: YTDL [debug]: [download] [0;94m  0.2%[0m of    4.07MiB at [0;32m   1.39MiB/s[0m ETA [0;33m00:02[0m
+2026-08-15 22:26:17,624 INFO root: YTDL [debug]: [download] [0;94m  0.4%[0m of    4.07MiB at [0;32m   2.48MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 22:26:17,625 INFO root: YTDL [debug]: [download] [0;94m  0.7%[0m of    4.07MiB at [0;32m   3.74MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 22:26:17,627 INFO root: YTDL [debug]: [download] [0;94m  1.5%[0m of    4.07MiB at [0;32m   6.76MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,632 INFO root: YTDL [debug]: [download] [0;94m  3.0%[0m of    4.07MiB at [0;32m   8.78MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,640 INFO root: YTDL [debug]: [download] [0;94m  6.1%[0m of    4.07MiB at [0;32m  11.24MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,658 INFO root: YTDL [debug]: [download] [0;94m 12.3%[0m of    4.07MiB at [0;32m  12.36MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,679 INFO root: YTDL [debug]: [download] [0;94m 24.5%[0m of    4.07MiB at [0;32m  15.96MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,747 INFO root: YTDL [debug]: [download] [0;94m 49.1%[0m of    4.07MiB at [0;32m  15.32MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,879 INFO root: YTDL [debug]: [download] [0;94m 98.3%[0m of    4.07MiB at [0;32m  15.26MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,884 INFO root: YTDL [debug]: [download] [0;94m100.0%[0m of    4.07MiB at [0;32m  15.37MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 22:26:17,894 INFO root: YTDL [debug]: [download] 100% of    4.07MiB in [1;37m00:00:00[0m at [0;32m13.52MiB/s[0m
+2026-08-15 22:26:17,990 INFO root: YTDL [debug]: [ExtractAudio] Destination: SONGS\Jo Tum Mere Ho---Anuv Jain.mp3
+2026-08-15 22:26:26,906 INFO root: YTDL [debug]: Deleting original file SONGS\Jo Tum Mere Ho---Anuv Jain.webm (pass -k to keep)
+2026-08-15 22:26:26,937 INFO root: download over
+2026-08-15 22:26:56,298 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 22:26:56,343 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 23:09:55,494 INFO root: loading song husn by Anuv Jain
+2026-08-15 23:09:59,860 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 23:10:00,121 INFO root: POST request errored, full details: {'code': 500, 'error': 'Server error. Please try again'}
+2026-08-15 23:12:54,900 INFO root: loading song Choo Lo by The Local train
+2026-08-15 23:12:54,900 INFO root: downloading Choo Lo by The Local train
+2026-08-15 23:12:55,075 INFO root: YTDL [debug]: [youtube:search] Extracting URL: ytsearch:Choo Lo The Local train topic lyrics
+2026-08-15 23:12:55,076 INFO root: YTDL [debug]: [download] Downloading playlist: Choo Lo The Local train topic lyrics
+2026-08-15 23:12:55,076 INFO root: YTDL [debug]: [youtube:search] query "Choo Lo The Local train topic lyrics": Downloading web client config
+2026-08-15 23:12:56,278 INFO root: YTDL [debug]: [youtube:search] query "Choo Lo The Local train topic lyrics" page 1: Downloading API JSON
+2026-08-15 23:12:56,723 INFO root: YTDL [debug]: [youtube:search] Playlist Choo Lo The Local train topic lyrics: Downloading 1 items of 1
+2026-08-15 23:12:56,723 INFO root: YTDL [debug]: [download] Downloading item 1 of 1
+2026-08-15 23:12:56,726 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=opwZ_PJ-F_E
+2026-08-15 23:12:56,726 INFO root: YTDL [debug]: [youtube] opwZ_PJ-F_E: Downloading webpage
+2026-08-15 23:12:57,560 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 23:12:57,566 INFO root: YTDL [debug]: [youtube] opwZ_PJ-F_E: Downloading android vr player API JSON
+2026-08-15 23:12:57,812 INFO root: YTDL [debug]: [download] Finished downloading playlist: Choo Lo The Local train topic lyrics
+2026-08-15 23:12:57,812 INFO root: URL acquired
+2026-08-15 23:12:57,903 INFO root: starting download
+2026-08-15 23:12:57,906 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=opwZ_PJ-F_E
+2026-08-15 23:12:57,908 INFO root: YTDL [debug]: [youtube] opwZ_PJ-F_E: Downloading webpage
+2026-08-15 23:12:59,548 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 23:12:59,552 INFO root: YTDL [debug]: [youtube] opwZ_PJ-F_E: Downloading android vr player API JSON
+2026-08-15 23:12:59,790 INFO root: YTDL [debug]: [info] opwZ_PJ-F_E: Downloading 1 format(s): 251
+2026-08-15 23:12:59,829 INFO root: YTDL [error]: ERROR: unable to download video data: HTTP Error 403: Forbidden
+2026-08-15 23:18:09,601 INFO root: APPLICATION EXIT
+2026-08-15 23:18:23,482 INFO root: loading song husn by Anuv Jain
+2026-08-15 23:18:26,898 INFO root: POST request errored, full details: {'code': 400, 'error': 'Missing session key and/or endpoint'}
+2026-08-15 23:18:26,921 INFO root: POST request errored, full details: {'code': 400, 'error': 'Missing session key and/or endpoint'}
+2026-08-15 23:21:23,078 INFO root: loading song Jo Tum Mere Ho by Anuv Jain
+2026-08-15 23:22:05,737 INFO root: POST request errored, full details: {'code': 400, 'error': 'Missing session key and/or endpoint'}
+2026-08-15 23:22:05,769 INFO root: POST request errored, full details: {'code': 400, 'error': 'Missing session key and/or endpoint'}
+2026-08-15 23:26:48,393 INFO root: loading song Dil Mere by The Local train
+2026-08-15 23:26:48,398 INFO root: downloading Dil Mere by The Local train
+2026-08-15 23:26:48,569 INFO root: YTDL [debug]: [youtube:search] Extracting URL: ytsearch:Dil Mere The Local train topic lyrics
+2026-08-15 23:26:48,569 INFO root: YTDL [debug]: [download] Downloading playlist: Dil Mere The Local train topic lyrics
+2026-08-15 23:26:48,570 INFO root: YTDL [debug]: [youtube:search] query "Dil Mere The Local train topic lyrics": Downloading web client config
+2026-08-15 23:26:49,530 INFO root: YTDL [debug]: [youtube:search] query "Dil Mere The Local train topic lyrics" page 1: Downloading API JSON
+2026-08-15 23:26:50,441 INFO root: YTDL [debug]: [youtube:search] Playlist Dil Mere The Local train topic lyrics: Downloading 1 items of 1
+2026-08-15 23:26:50,441 INFO root: YTDL [debug]: [download] Downloading item 1 of 1
+2026-08-15 23:26:50,444 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=A1q10_ixM8E
+2026-08-15 23:26:50,444 INFO root: YTDL [debug]: [youtube] A1q10_ixM8E: Downloading webpage
+2026-08-15 23:26:51,317 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 23:26:51,333 INFO root: YTDL [debug]: [youtube] A1q10_ixM8E: Downloading android vr player API JSON
+2026-08-15 23:26:51,654 INFO root: YTDL [debug]: [download] Finished downloading playlist: Dil Mere The Local train topic lyrics
+2026-08-15 23:26:51,654 INFO root: URL acquired
+2026-08-15 23:26:51,701 INFO root: starting download
+2026-08-15 23:26:51,702 INFO root: YTDL [debug]: [youtube] Extracting URL: https://www.youtube.com/watch?v=A1q10_ixM8E
+2026-08-15 23:26:51,703 INFO root: YTDL [debug]: [youtube] A1q10_ixM8E: Downloading webpage
+2026-08-15 23:26:52,556 INFO root: APPLICATION EXIT
+2026-08-15 23:26:53,134 INFO root: YTDL [warning]: [youtube] No supported JavaScript runtime could be found. Only deno is enabled by default; to use another runtime add  --js-runtimes RUNTIME[:PATH]  to your command/config. YouTube extraction without a JS runtime has been deprecated, and some formats may be missing. See  https://github.com/yt-dlp/yt-dlp/wiki/EJS  for details on installing one
+2026-08-15 23:26:53,140 INFO root: YTDL [debug]: [youtube] A1q10_ixM8E: Downloading android vr player API JSON
+2026-08-15 23:26:53,443 INFO root: YTDL [debug]: [info] A1q10_ixM8E: Downloading 1 format(s): 251
+2026-08-15 23:26:53,524 INFO root: YTDL [debug]: [download] Destination: SONGS\Dil Mere---The Local train.webm
+2026-08-15 23:26:53,524 INFO root: YTDL [debug]: [download] [0;94m  0.0%[0m of    3.60MiB at [0;32m 775.86KiB/s[0m ETA [0;33m00:04[0m
+2026-08-15 23:26:53,526 INFO root: YTDL [debug]: [download] [0;94m  0.1%[0m of    3.60MiB at [0;32m   1.27MiB/s[0m ETA [0;33m00:02[0m
+2026-08-15 23:26:53,526 INFO root: YTDL [debug]: [download] [0;94m  0.2%[0m of    3.60MiB at [0;32m   2.07MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 23:26:53,528 INFO root: YTDL [debug]: [download] [0;94m  0.4%[0m of    3.60MiB at [0;32m   3.41MiB/s[0m ETA [0;33m00:01[0m
+2026-08-15 23:26:53,530 INFO root: YTDL [debug]: [download] [0;94m  0.8%[0m of    3.60MiB at [0;32m   4.14MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,533 INFO root: YTDL [debug]: [download] [0;94m  1.7%[0m of    3.60MiB at [0;32m   6.59MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,535 INFO root: YTDL [debug]: [download] [0;94m  3.4%[0m of    3.60MiB at [0;32m  10.46MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,541 INFO root: YTDL [debug]: [download] [0;94m  6.9%[0m of    3.60MiB at [0;32m  13.63MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,555 INFO root: YTDL [debug]: [download] [0;94m 13.9%[0m of    3.60MiB at [0;32m  15.55MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,583 INFO root: YTDL [debug]: [download] [0;94m 27.7%[0m of    3.60MiB at [0;32m  16.91MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,646 INFO root: YTDL [debug]: [download] [0;94m 55.5%[0m of    3.60MiB at [0;32m  16.23MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,729 INFO root: YTDL [debug]: [download] [0;94m100.0%[0m of    3.60MiB at [0;32m  17.48MiB/s[0m ETA [0;33m00:00[0m
+2026-08-15 23:26:53,739 INFO root: YTDL [debug]: [download] 100% of    3.60MiB in [1;37m00:00:00[0m at [0;32m13.14MiB/s[0m
+2026-08-15 23:26:53,989 INFO root: YTDL [debug]: [ExtractAudio] Destination: SONGS\Dil Mere---The Local train.mp3

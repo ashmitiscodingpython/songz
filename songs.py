@@ -25,8 +25,10 @@ import ctypes
 import shutil
 import vlc
 import dotenv
-import logging
+import traceback
 import sys
+import logging
+from pathlib import Path
 # endregion
 
 # region Helper Functions
@@ -47,7 +49,7 @@ def authenticate():
     clearline("Performing pre-auth...")
     token = session.get(
         f"https://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={api}&api_sig={api_sig}&format=json"
-    ).json()['token']
+    )['token']
     webbrowser.open(f"https://www.last.fm/api/auth/?api_key={api}&token={token}")
     clearline("Press Enter when authorized...", end="")
     input()
@@ -57,7 +59,7 @@ def authenticate():
         api_sig = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
         sessionk = session.get(
             f"https://ws.audioscrobbler.com/2.0/?method=auth.getSession&token={token}&api_key={api}&api_sig={api_sig}&format=json"
-        ).json()["session"]
+        )["session"]
         old = read(open("config.json"))
         old["username"] = sessionk["name"]
         old["session"] = sessionk["key"]
@@ -107,7 +109,7 @@ def signed_request(method: str, params=None):
     sig += secret
     sign = hashlib.md5(sig.encode("utf-8")).hexdigest()
     url = f"https://ws.audioscrobbler.com/2.0/?method={method}&{'&'.join(f'{quote(p)}={quote(v)}' for p, v in params.items())}&format=json&api_sig={sign}"
-    return session.get(url).json()
+    return session.get(url)
 def reget(url):
     while True:
         try:
@@ -125,13 +127,13 @@ def autochoose(nowplaying, played:list, ms=False):
     start = int(time.perf_counter() * 1000)
     toptracks = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=overall&user={username}&format=json&api_key={api}"
-    ).json()["toptracks"]["track"]
+    )["toptracks"]["track"]
     topartists = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&period=overall&user={username}&format=json&api_key={api}"
-    ).json()["topartists"]["artist"]
+    )["topartists"]["artist"]
     lovetracks = reget(
         f"https://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user={username}&limit=100&api_key={api}&format=json"
-    ).json()["lovedtracks"]["track"]
+    )["lovedtracks"]["track"]
     listed = {
         "toptracks": [track["name"] for track in toptracks],
         "topartists": [artist["name"] for artist in topartists],
@@ -246,25 +248,25 @@ def suggestions(name, artist, limit):
     :returns: Name as ['name'], artist as ['artist']['name'] and playcount as ['playcount'].
     """
     name, artist = correction(name, artist)
-    similar = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&format=json&limit={limit + 1}").json()['similartracks']['track']
+    similar = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&format=json&limit={limit + 1}")['similartracks']['track']
     return similar
 def results(name, mode="songs", limit=5):
     if mode == "songs":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
         response_ = _['results']['trackmatches']['track']
         if response_:
             return response_
         else:
             return False
     elif mode == "albums":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
         response_ = _['results']['albummatches']['album']
         if response_:
             return response_
         else:
             return False
     elif mode == "artists":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json").json()
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
         response_ = _['results']['artistmatches']['artist']
         if response_:
             return response_
@@ -273,11 +275,15 @@ def results(name, mode="songs", limit=5):
     return None
 def load_song(name, artist=None):
     global current
+    logging.info(f"loading song {name} by {artist}")
     tru, val = check(camelcase(name), True)
     if not tru:
+        logging.info(f"downloading {name} by {artist}")
         response_ = ydl.extract_info(f"ytsearch:{name} {artist if artist else ''} topic lyrics", download=False)['entries'][0]
         url = response_['original_url']
+        logging.info("URL acquired")
         download(url, camelcase(name), artist)
+        logging.info("download over")
         tru, val = check(camelcase(name), True)
     val = val[0]
     current["name"] = val
@@ -296,6 +302,7 @@ def play_song(title_, player_):
     old = read(open("config.json"))
     old["plays"].append(f"{titl}!>|<!{get_saved_artist(titl)}")
     json.dump(old, open("config.json", "w"), indent=4)
+    scrobble(titl, get_saved_artist(titl), True)
     add_recent("s", titl, get_saved_artist(titl))
 def download(urls, name, artist):
     #    "progress_hooks": [download_progress],
@@ -313,6 +320,10 @@ def download(urls, name, artist):
         }]
     }
     with yt_dlp.YoutubeDL(_ydl_opts) as ytdl:
+        logging.info("starting download")
+        ytdl.download([urls])
+    if not Path(f"SONGS/{name}---{artist}.mp3").exists():
+        logging.info("starting download again")
         ytdl.download([urls])
     add_song(camelcase(name), artist)
 def add_song(name, artist):
@@ -345,7 +356,7 @@ def correction(name, artist):
     data = read(open("config.json"))
     response = session.get(
         f"https://ws.audioscrobbler.com/2.0/?method=track.getcorrection&artist={quote(artist)}&track={quote(name)}&api_key={os.getenv('LASTFM_API')}&format=json"
-    ).json()["corrections"]["correction"]["track"]
+    )["corrections"]["correction"]["track"]
     return response["name"], response["artist"]["name"]
 def check(name, verbose=False):
     try:
@@ -375,6 +386,7 @@ def quit_(restart=False, volume=None):
         os.system(
             f'start wt cmd /k "title Command Prompt && echo {subprocess.check_output("ver", shell=True).decode().strip()} && echo ^(c^) Microsoft Corporation. All rights reserved. && cd /d \"{sys.argv[1]}\""'
         )
+    logging.info("APPLICATION EXIT")
     exit(0)
 def get_saved_artist(song):
     try:
@@ -401,24 +413,28 @@ def get_config(key):
     data_ = read(file)
     file.close()
     return data_[key]
-def eror(type, val, info):
-    logging.error(
-        "Uncaught exception",
-        exc_info=(exc_type, exc_value, exc_traceback)
-    )
+def eror(exc_type, exc_value, exc_traceback):
+    with open("errors.log", "a", encoding="utf-8") as f:
+        traceback.print_exception(
+            exc_type,
+            exc_value,
+            exc_traceback,
+            file=f
+        )
 # endregion
 
 # region Classes
 class SilentLogger:
-    def debug(self, msg): pass
-    def warning(self, msg): pass
-    def error(self, msg): pass
+    def debug(self, msg): logging.info(f"YTDL [debug]: {msg}")
+    def warning(self, msg): logging.info(f"YTDL [warning]: {msg}")
+    def error(self, msg): logging.info(f"YTDL [error]: {msg}")
 class Session:
-    def get(self, url: str, secure: bool = False) -> dict:
+    def get(self, url: str, secure: bool = False, timeout: int = 100) -> dict:
         """
         Sends a POST request to the GET endpoint of the backend
         :param url: The url that would have been sent to last.fm's API minus the api_key and/or api_sig
         :param secure: Whether to include the api_sig or not; False by default
+        :param: timeout: The amount of time (in seconds) to wait before timing out
         :return: The exact response from last.fm OR the error code plsu the error message
         """
         q = url.replace("https://ws.audioscrobbler.com/2.0/?", "")
@@ -431,25 +447,26 @@ class Session:
         queries["secure"] = secure
         response = requests.post(
             "https://songz.ashmit.hackclub.app/get",
-            json=queries
+            json=queries,
+            timeout=timeout
         ).json()["response"]
         return response
     def post(self, url: str, data: dict, secure: bool = False):
         """
-        Sends a POST request to the POST endpoint of the backend
+        Sends a POST request to the POST endpoint of the backend. The request is automatically signed.
         :param url: This parameter is unused and is only required for a clean swap from requests to Songz API
         :param data: The POST data sent along with the POST request to last.fm
         :param secure: Whether to include the api_sig or not; False by default
         :return:
         """
-        if secure:
-            data["sk"] = get_config("session")
-            sigs = dict(sorted(data.items()))
-            sig_string = "".join([k for pair in data.items() for k in pair])
-            sign = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
-            data["api_sig"] = sign
-        respons = requests.post("https://songz.ashmit.hackclub.app/post", data=data).json()["data"]
-        return respons
+        data["session_key"] = get_config("ssk")
+        data["sk"] = get_config("session")
+        respons = requests.post("https://songz.ashmit.hackclub.app/post", json=data).json()
+        if respons.get("error"):
+            logging.info(f"POST request errored, full details: {respons}")
+            return False
+        logging.info(f"POST request sent to {data['method']} code: {respons['code']}")
+        return respons["data"]
 
 # endregion
 
@@ -574,7 +591,7 @@ def UI():
                         erase()
                         salbum = session.get(
                             f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(artist)}&album={quote(name)}&format=json"
-                        ).json()['album']
+                        )['album']
                         laststate = state
                         state = "album"
                         add_recent("l", salbum["name"], salbum["artist"])
@@ -582,7 +599,7 @@ def UI():
                     elif sel[0] == "A":
                         stop = session.get(
                             f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sel[3:])}&format=json&limit=10"
-                        ).json()['toptracks']
+                        )['toptracks']
                         sartist = {
                             "name": sel[3:],
                             "tops": stop['track'],
@@ -957,7 +974,7 @@ def UI():
                     elif pressed in nums:
                         erase()
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
-                        salbum = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json").json()['album']
+                        salbum = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json")['album']
                         laststate = state
                         state = "album"
                         add_recent("l", salbum["name"], salbum["artist"])
@@ -1108,7 +1125,7 @@ def UI():
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
                         stop = session.get(
                             f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(results_run[index]['name'])}&format=json&limit=10"
-                        ).json()['toptracks']
+                        )['toptracks']
                         sartist = {
                             "name": results_run[index]['name'],
                             "tops": stop['track'],
@@ -1154,7 +1171,7 @@ def UI():
                         if not len(sartist['tops']) > (page * 10) + 1:
                             stop = session.get(
                                 f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit={(page + 1) * 10}"
-                            ).json()['toptracks']
+                            )['toptracks']
                             sartist = {
                                 "name": sartist['name'],
                                 "tops": stop['track'],
@@ -1172,7 +1189,7 @@ def UI():
                     clearline("Loading...")
                     stop = session.get(
                         f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit=35"
-                    ).json()['toptracks']['track']
+                    )['toptracks']['track']
                     if pressed in ['s', 'S']:
                         random.shuffle(stop)
                     plad = False
@@ -1229,13 +1246,13 @@ def setup():
 # region Start
 dotenv.load_dotenv("secrets.env")
 if __name__ == "__main__":
-    logging.basicConfig(
-        filename="errors.log",
-        level=logging.ERROR,
-        format="%(asctime)s - %(levelname)s - %(message)s"
-    )
     sys.excepthook = eror
     init()
+    logging.basicConfig(
+        filename="logg.log",
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     session = Session()
     st = requests.post(
         "https://songz.ashmit.hackclub.app/admin/stats",
