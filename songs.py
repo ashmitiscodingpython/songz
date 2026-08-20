@@ -3,6 +3,10 @@ if __name__ == "__main__":
     print("Loading...")
 else:
     print("Loading songs...")
+import ctypes
+user32 = ctypes.windll.user32
+user32.SetForegroundWindow(user32.FindWindowW(None, "songzplayer"))
+active_window = user32.GetForegroundWindow()
 import math
 import webbrowser
 import requests
@@ -21,7 +25,6 @@ import os
 import random
 import re
 from colorama import init, Fore, Back, Style
-import ctypes
 import shutil
 import vlc
 import dotenv
@@ -240,7 +243,8 @@ def get_times(milliseconds: int):
     seconds = math.floor((milliseconds - (minutes * 60000)) / 1000)
     return [minutes, seconds, milliseconds]
 def clearline(text="", end="\n"):
-    print(f"\033[2K\r{text}", end=end)
+    if user32.GetForegroundWindow() == active_window:
+        print(f"\033[2K\r{text}", end=end)
 def suggestions(name, artist, limit):
     """
     Get suggestions for a track.
@@ -248,25 +252,27 @@ def suggestions(name, artist, limit):
     :returns: Name as ['name'], artist as ['artist']['name'] and playcount as ['playcount'].
     """
     name, artist = correction(name, artist)
-    similar = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&format=json&limit={limit + 1}")['similartracks']['track']
+    similar = session.get(
+        f"https://ws.audioscrobbler.com/2.0/?method=track.getsimilar&artist={quote(artist)}&track={quote(name)}&format=json&limit={limit + 1}"
+    )['similartracks']['track']
     return similar
 def results(name, mode="songs", limit=5):
     if mode == "songs":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=track.search&track={quote(name)}&limit={limit + 1}&format=json")
         response_ = _['results']['trackmatches']['track']
         if response_:
             return response_
         else:
             return False
     elif mode == "albums":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.search&album={quote(name)}&limit={limit + 1}&format=json")
         response_ = _['results']['albummatches']['album']
         if response_:
             return response_
         else:
             return False
     elif mode == "artists":
-        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&api_key=dabde6a332fadc456b8882d0d6fb0529&limit={limit + 1}&format=json")
+        _ = session.get(f"https://ws.audioscrobbler.com/2.0/?method=artist.search&artist={quote(name)}&limit={limit + 1}&format=json")
         response_ = _['results']['artistmatches']['artist']
         if response_:
             return response_
@@ -274,13 +280,16 @@ def results(name, mode="songs", limit=5):
             return False
     return None
 def load_song(name, artist=None):
-    global current
+    global current, download_prog
+    download_prog = ""
     logging.info(f"loading song {name} by {artist}")
     tru, val = check(camelcase(name), True)
     if not tru:
         logging.info(f"downloading {name} by {artist}")
+        download_prog = "Extracting URL"
         response_ = ydl.extract_info(f"ytsearch:{name} {artist if artist else ''} topic lyrics", download=False)['entries'][0]
         url = response_['original_url']
+        download_prog = "URL extracted"
         logging.info("URL acquired")
         download(url, camelcase(name), artist)
         logging.info("download over")
@@ -321,8 +330,10 @@ def download(urls, name, artist):
     }
     with yt_dlp.YoutubeDL(_ydl_opts) as ytdl:
         logging.info("starting download")
+        download_prog = "Starting download"
         ytdl.download([urls])
     if not Path(f"SONGS/{name}---{artist}.mp3").exists():
+        download_prog("Retrying download")
         logging.info("starting download again")
         ytdl.download([urls])
     add_song(camelcase(name), artist)
@@ -376,9 +387,7 @@ def check(name, verbose=False):
         else:
             return False
 def quit_(restart=False, volume=None):
-    old = read(open("config.json"))
-    old["volume"] = volume
-    json.dump(old, open("config.json", "w"), indent=4)
+    save_config("volume", volume)
     os.system("cls")
     if not restart:
         print("\033[?25h", end='')
@@ -421,11 +430,22 @@ def eror(exc_type, exc_value, exc_traceback):
             exc_traceback,
             file=f
         )
+def log_vol(x, complex=False):
+    x /= 100
+    db = -60 + 60 * clamp(x, 0, 10000)
+    return round(100 * (10 ** (db / 20))) if complex else round(100 * (clamp(x, 0, 10000) ** 2))
 # endregion
 
 # region Classes
 class SilentLogger:
-    def debug(self, msg): logging.info(f"YTDL [debug]: {msg}")
+    def debug(self, msg):
+        global download_prog
+        logging.info(f"YTDL [debug]: {msg}")
+        dwnld_prgrss = re.search(r"\x1B\[0;94m(.*?)\x1B\[0m", msg)
+        if dwnld_prgrss:
+            download_prog = f"Downloading: {dwnld_prgrss.group(1).lstrip()}"
+        if "[debug]: [ExtractAudio]" in msg:
+            download_prog = "Extracting .webm file to .mp3"
     def warning(self, msg): logging.info(f"YTDL [warning]: {msg}")
     def error(self, msg): logging.info(f"YTDL [error]: {msg}")
 class Session:
@@ -472,7 +492,7 @@ class Session:
 
 # region Main Functions
 def UI():
-    global current, events, user32, active_window, last_active, pressed, main, queued, lefts, rhide
+    global current, events, user32, last_active, pressed, main, queued, lefts, rhide
     # region Initialization
     intext = ""
     future = None
@@ -525,8 +545,6 @@ def UI():
     ]
     # endregion
     while True:
-        with open("config.json") as f:
-            config = read(f)
         active = user32.GetForegroundWindow() == active_window
         if not active:
             pressed = None
@@ -569,7 +587,7 @@ def UI():
                     laststate = state
                     state = "playing"
                 if pressed in nums and ctrl:
-                    recent = list(dict.fromkeys(config["recents"]))
+                    recent = list(dict.fromkeys(get_config("recents")))
                     recent.reverse()
                     sel = recent[int("".join(c for c in pressed if c.isdigit())) - 1]
                     if sel[0] == "S":
@@ -598,7 +616,7 @@ def UI():
                         page = 1
                     elif sel[0] == "A":
                         stop = session.get(
-                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sel[3:])}&format=json&limit=10"
+                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist={quote(sel[3:])}&format=json&limit=10"
                         )['toptracks']
                         sartist = {
                             "name": sel[3:],
@@ -620,7 +638,7 @@ def UI():
             clearline()
             _i = 1
             try:
-                recents = list(dict.fromkeys(config["recents"]))
+                recents = list(dict.fromkeys(get_config("recents")))
                 recents.reverse()
                 clearline("Recents:")
                 for recent in recents:
@@ -696,9 +714,7 @@ def UI():
                     state = "home"
                 elif pressed in ['o', 'O']:
                     if not autoplay:
-                        _ = suggestions(nowplaying['name'], nowplaying['artist'], 5)
-                        if _:
-                            autoplay = True
+                        autoplay = bool(suggestions(nowplaying['name'], nowplaying['artist'], 5))
                 elif pressed in ['c', 'C']:
                     if recommendation and not chosen and not rhide:
                         erase()
@@ -754,7 +770,7 @@ def UI():
                     played.append(nowplaying['name'])
                 clearline(style("Autoplay is on", "LIGHTMAGENTA_EX", "BRIGHT"))
                 if lefts[2] < 60000 and len(queued) == 0:
-                    if not config["authenticated"]:
+                    if not get_config("authenticated"):
                         queued = [{}] + queued
                         ch = sorted(
                             [l for l in suggestions(nowplaying['name'], nowplaying['artist'], 5) if l['name'] not in played],
@@ -792,7 +808,7 @@ def UI():
                 clearline("[Space] Pause [A] Rewind  [D] Fast-Forward")
                 clearline("[W] +Volume   [S] -Volume [Q] Exit")
                 clearline(f"[N] Exit & Relaunch       {'[R] Recommendations' if nowplaying['artist'] and not recommendation and not rhide and not autoplay else ('[H] Home' if autoplay else '')}")
-                player.audio_set_volume(volume)
+                player.audio_set_volume(log_vol(volume))
                 clearline()
                 clearline()
                 clearline()
@@ -914,42 +930,37 @@ def UI():
                         quit_(volume=volume, restart=True)
                     pressed = None
         elif state == 'songstate':
-            if current['name'] and not (nowplaying['name'] and nowplaying['name'] == current['name']):
-                if check(camelcase(current['name'])):
-                    clearline(f"Selected song: {current['name']} by {current['artist']}")
-                    clearline(f"[P] Play [B] Back {'[U] Add to queue' if nowplaying['name'] else ''}")
-                    clearline("[Q] Exit [N] Exit & Relaunch")
-                    if pressed and active:
-                        if pressed in ['p', 'P']:
-                            erase()
-                            play_song(current['name'], player)
-                            nowplaying = current.copy()
-                            paused = False
-                            laststate = state
-                            state = "playing"
-                            page = 1
-                        elif pressed in ['b', 'B']:
-                            erase()
-                            state = laststate
-                        elif pressed in ['u', 'U'] and nowplaying['name']:
-                            erase()
-                            queued.append({})
-                            queued[len(queued) - 1]['name'] = current['name']
-                            queued[len(queued) - 1]['artist'] = current['artist']
-                            laststate = state
-                            state = "playing"
-                        elif pressed in ['q', 'Q']:
-                            quit_(volume=volume)
-                        elif pressed in ['n', 'N']:
-                            quit_(volume=volume, restart=True)
-                        pressed = None
-                else:
-                    clearline("Loading...")
-                    clearline()
-                    clearline()
+            if current['name'] and not (nowplaying['name'] and nowplaying['name'] == current['name']) and check(camelcase(current["name"])):
+                clearline(f"Selected song: {current['name']} by {current['artist']}")
+                clearline(f"[P] Play [B] Back {'[U] Add to queue' if nowplaying['name'] else ''}")
+                clearline("[Q] Exit [N] Exit & Relaunch")
+                if pressed and active:
+                    if pressed in ['p', 'P']:
+                        erase()
+                        play_song(current['name'], player)
+                        nowplaying = current.copy()
+                        paused = False
+                        laststate = state
+                        state = "playing"
+                        page = 1
+                    elif pressed in ['b', 'B']:
+                        erase()
+                        state = laststate
+                    elif pressed in ['u', 'U'] and nowplaying['name']:
+                        erase()
+                        queued.append({})
+                        queued[len(queued) - 1]['name'] = current['name']
+                        queued[len(queued) - 1]['artist'] = current['artist']
+                        laststate = state
+                        state = "playing"
+                    elif pressed in ['q', 'Q']:
+                        quit_(volume=volume)
+                    elif pressed in ['n', 'N']:
+                        quit_(volume=volume, restart=True)
+                    pressed = None
             else:
                 clearline("Loading...")
-                clearline()
+                clearline(download_prog)
                 clearline()
         elif state == "results-album":
             if results_run:
@@ -1124,7 +1135,7 @@ def UI():
                         erase()
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
                         stop = session.get(
-                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(results_run[index]['name'])}&format=json&limit=10"
+                            f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist={quote(results_run[index]['name'])}&format=json&limit=10"
                         )['toptracks']
                         sartist = {
                             "name": results_run[index]['name'],
@@ -1170,7 +1181,7 @@ def UI():
                     if availables['d']:
                         if not len(sartist['tops']) > (page * 10) + 1:
                             stop = session.get(
-                                f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit={(page + 1) * 10}"
+                                f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist={quote(sartist['name'])}&format=json&limit={(page + 1) * 10}"
                             )['toptracks']
                             sartist = {
                                 "name": sartist['name'],
@@ -1188,7 +1199,7 @@ def UI():
                 elif pressed in ['p', 'P', 's', 'S']:
                     clearline("Loading...")
                     stop = session.get(
-                        f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&api_key=dabde6a332fadc456b8882d0d6fb0529&artist={quote(sartist['name'])}&format=json&limit=35"
+                        f"https://ws.audioscrobbler.com/2.0/?method=artist.gettoptracks&artist={quote(sartist['name'])}&format=json&limit=35"
                     )['toptracks']['track']
                     if pressed in ['s', 'S']:
                         random.shuffle(stop)
@@ -1233,9 +1244,6 @@ def setup():
         "format": "bestaudio/best",
         "windowsfilenames": True,
     }
-    user32 = ctypes.windll.user32
-    user32.SetForegroundWindow(user32.FindWindowW(None, "songzplayer"))
-    active_window = user32.GetForegroundWindow()
     ydl = yt_dlp.YoutubeDL(ydl_opts)
     last_active = False
     keyboard.on_press(keying)
@@ -1246,6 +1254,7 @@ def setup():
 # region Start
 dotenv.load_dotenv("secrets.env")
 if __name__ == "__main__":
+    download_prog = ""
     sys.excepthook = eror
     init()
     logging.basicConfig(
