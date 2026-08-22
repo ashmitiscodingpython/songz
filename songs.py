@@ -8,7 +8,6 @@ user32 = ctypes.windll.user32
 user32.SetForegroundWindow(user32.FindWindowW(None, "songzplayer"))
 active_window = user32.GetForegroundWindow()
 import math
-import webbrowser
 import requests
 import hashlib
 import subprocess
@@ -26,7 +25,6 @@ import random
 import re
 from colorama import init, Fore, Back, Style
 import shutil
-import vlc
 import dotenv
 import traceback
 import sys
@@ -53,6 +51,7 @@ def authenticate():
     url = session.auth(token)
     clearline("Opening URL... (Please return here after authentication)")
     time.sleep(1)
+    import webbrowser
     webbrowser.open(url)
     clearline("Press Enter when authorized...", end="")
     input()
@@ -416,7 +415,7 @@ def get_config(key):
         return None
     data_ = read(file)
     file.close()
-    return data_[key]
+    return data_.get(key)
 def eror(exc_type, exc_value, exc_traceback):
     with open("errors.log", "a", encoding="utf-8") as f:
         traceback.print_exception(
@@ -494,6 +493,7 @@ class Session:
 # region Main Functions
 def UI():
     global current, events, user32, last_active, pressed, main, queued, lefts, rhide
+    import vlc
     # region Initialization
     intext = ""
     future = None
@@ -501,7 +501,9 @@ def UI():
     start = time.perf_counter()
     player = vlc.MediaPlayer()
     cursor = 0
-    volume = 50
+    volume = get_config("volume")
+    if not volume:
+        volume = 50
     pheld = False
     paused = False
     os.system("cls")
@@ -804,7 +806,7 @@ def UI():
                 clearline(style("[1-5] Add to Queue", "LIGHTMAGENTA_EX", "BRIGHT"))
                 clearline(f"{style('[Z] Previous [X] Next    [C] Close', 'LIGHTMAGENTA_EX', 'BRIGHT')}")
             else:
-                clearline(("[H] Home     " if not chosen else '') + ("     [O] Autoplay" if not autoplay else ''))
+                clearline(("[H] Home      " if not chosen else '') + ("[O] Autoplay" if not autoplay else ''))
             if not temphome:
                 clearline("[Space] Pause [A] Rewind  [D] Fast-Forward")
                 clearline("[W] +Volume   [S] -Volume [Q] Exit")
@@ -1231,6 +1233,7 @@ def UI():
             clearline("[Q] Exit    [N] Exit & Relaunch")
             clearline("[B] Back    [P] Play (In order of playcount)")
             clearline("[S] Play (Shuffled)")
+        time.sleep(0.016)
 
 def setup():
     global events, user32, active_window, ydl, last_active, pressed, held

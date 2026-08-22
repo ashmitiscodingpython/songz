@@ -2,4 +2,5 @@
 ^^^^ bat installer
 ~song download progress~ DONE
 ^^^^ fix UI redundancy (e.g [H] Home twice)
+~Backend OTP system~ DONE
 Windows SMTC support
