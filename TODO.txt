@@ -1,4 +1,5 @@
-Love songs
-bat installer
+^^^^ Love songs
+^^^^ bat installer
 ~song download progress~ DONE
-fix UI redundancy (e.g [H] Home twice)
+^^^^ fix UI redundancy (e.g [H] Home twice)
+Windows SMTC support

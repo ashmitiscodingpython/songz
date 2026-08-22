@@ -44,35 +44,32 @@ def read(fp):
             time.sleep(0.01)
 def authenticate():
     clearline("Starting authorization process")
-    dotenv.load_dotenv("secrets.env")
-    api = os.getenv("LASTFM_API")
-    secret = os.getenv("LASTFM_SECRET")
-    sig_string = f"api_key{api}methodauth.getToken{secret}"
-    api_sig = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
     clearline("Performing pre-auth...")
     token = session.get(
-        f"https://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={api}&api_sig={api_sig}&format=json"
+        f"https://ws.audioscrobbler.com/2.0/?method=auth.getToken&format=json",
+        secure=True
     )['token']
-    webbrowser.open(f"https://www.last.fm/api/auth/?api_key={api}&token={token}")
+    clearline("Acquiring authentication URL...")
+    url = session.auth(token)
+    clearline("Opening URL... (Please return here after authentication)")
+    time.sleep(1)
+    webbrowser.open(url)
     clearline("Press Enter when authorized...", end="")
     input()
     clearline("Authenticating...")
     try:
-        sig_string = f"api_key{api}methodauth.getSessiontoken{token}{secret}"
-        api_sig = hashlib.md5(sig_string.encode("utf-8")).hexdigest()
         sessionk = session.get(
-            f"https://ws.audioscrobbler.com/2.0/?method=auth.getSession&token={token}&api_key={api}&api_sig={api_sig}&format=json"
+            f"https://ws.audioscrobbler.com/2.0/?method=auth.getSession&token={token}&format=json",
+            secure=True
         )["session"]
-        old = read(open("config.json"))
-        old["username"] = sessionk["name"]
-        old["session"] = sessionk["key"]
-        old["authenticated"] = True
-        json.dump(old, open("config.json", "w"), indent=4)
+        save_config("username", sessionk["name"])
+        save_config("session", sessionk["key"])
+        save_config("authenticated", True)
         clearline("Authentication completed!")
         time.sleep(2)
-        threading.Thread(target=scrobble_plays()).start()
-    except:
-        clearline("Authentication failed. Please try again.")
+        threading.Thread(target=scrobble_plays).start()
+    except Exception as e:
+        clearline(f"Authentication failed. Please try again. (debug: {e})")
         return False
     return True
 def scrobble_plays():
@@ -105,13 +102,12 @@ def signed_request(method: str, params=None):
     if params is None:
         params = {}
     dotenv.load_dotenv("secrets.env")
-    secret = os.getenv("LASTFM_SECRET")
     sig = ""
     for key, value in sorted(params.items()):
         sig += f"{key}{value}"
     sig += secret
     sign = hashlib.md5(sig.encode("utf-8")).hexdigest()
-    url = f"https://ws.audioscrobbler.com/2.0/?method={method}&{'&'.join(f'{quote(p)}={quote(v)}' for p, v in params.items())}&format=json&api_sig={sign}"
+    url = f"https://ws.audioscrobbler.com/2.0/?method={method}&{'&'.join(f'{quote(p)}={quote(v)}' for p, v in params.items())}&format=json"
     return session.get(url)
 def reget(url):
     while True:
@@ -126,16 +122,15 @@ def autochoose(nowplaying, played:list, ms=False):
     """
     dotenv.load_dotenv("secrets.env")
     username = read(open("config.json"))["username"]
-    api = os.getenv("LASTFM_API")
     start = int(time.perf_counter() * 1000)
     toptracks = reget(
-        f"https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=overall&user={username}&format=json&api_key={api}"
+        f"https://ws.audioscrobbler.com/2.0/?method=user.gettoptracks&period=overall&user={username}&format=json"
     )["toptracks"]["track"]
     topartists = reget(
-        f"https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&period=overall&user={username}&format=json&api_key={api}"
+        f"https://ws.audioscrobbler.com/2.0/?method=user.gettopartists&period=overall&user={username}&format=json"
     )["topartists"]["artist"]
     lovetracks = reget(
-        f"https://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user={username}&limit=100&api_key={api}&format=json"
+        f"https://ws.audioscrobbler.com/2.0/?method=user.getlovedtracks&user={username}&limit=100&format=json"
     )["lovedtracks"]["track"]
     listed = {
         "toptracks": [track["name"] for track in toptracks],
@@ -366,7 +361,7 @@ def normalize(text):
 def correction(name, artist):
     data = read(open("config.json"))
     response = session.get(
-        f"https://ws.audioscrobbler.com/2.0/?method=track.getcorrection&artist={quote(artist)}&track={quote(name)}&api_key={os.getenv('LASTFM_API')}&format=json"
+        f"https://ws.audioscrobbler.com/2.0/?method=track.getcorrection&artist={quote(artist)}&track={quote(name)}&format=json"
     )["corrections"]["correction"]["track"]
     return response["name"], response["artist"]["name"]
 def check(name, verbose=False):
@@ -444,7 +439,7 @@ class SilentLogger:
         dwnld_prgrss = re.search(r"\x1B\[0;94m(.*?)\x1B\[0m", msg)
         if dwnld_prgrss:
             download_prog = f"Downloading: {dwnld_prgrss.group(1).lstrip()}"
-        if "[debug]: [ExtractAudio]" in msg:
+        if "[ExtractAudio]" in msg:
             download_prog = "Extracting .webm file to .mp3"
     def warning(self, msg): logging.info(f"YTDL [warning]: {msg}")
     def error(self, msg): logging.info(f"YTDL [error]: {msg}")
@@ -487,6 +482,12 @@ class Session:
             return False
         logging.info(f"POST request sent to {data['method']} code: {respons['code']}")
         return respons["data"]
+    def auth(self, token: str):
+        response = requests.post(
+            "https://songz.ashmit.hackclub.app/auth/start",
+            json={"session_key": get_config("ssk"), "token": token}
+        )
+        return response.json()["URL"]
 
 # endregion
 
@@ -608,7 +609,7 @@ def UI():
                             name, artist = data[0], None
                         erase()
                         salbum = session.get(
-                            f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(artist)}&album={quote(name)}&format=json"
+                            f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist={quote(artist)}&album={quote(name)}&format=json"
                         )['album']
                         laststate = state
                         state = "album"
@@ -985,7 +986,7 @@ def UI():
                     elif pressed in nums:
                         erase()
                         index = ((page - 1) * 5) + (int("".join(c for c in pressed if c.isdigit())) - 1)
-                        salbum = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={os.getenv('LASTFM_API')}&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json")['album']
+                        salbum = session.get(f"https://ws.audioscrobbler.com/2.0/?method=album.getinfo&artist={quote(results_run[index]['artist'])}&album={quote(results_run[index]['name'])}&format=json")['album']
                         laststate = state
                         state = "album"
                         add_recent("l", salbum["name"], salbum["artist"])
